@@ -36,7 +36,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       {/* Center brand information */}
       <div className="hidden md:flex flex-col items-center text-center">
         <h1 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
-          Multimodal Chatbot MVP
+          Multimodal Chatbot
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Unified text, vision & data analysis assistant
@@ -44,12 +44,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        {sessionId && (
-          <span className="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full text-xs font-medium">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            Data Mode
-          </span>
-        )}
         {hasMessages && (
           <button
             onClick={onNewChat}

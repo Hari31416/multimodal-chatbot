@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { postJSON, postForm } from "../api/client";
+import { postJSON, postForm, getJSON } from "../api/client";
 import { ChatMessage } from "../types/chat";
 
 export const useChatLogic = () => {
@@ -23,32 +23,63 @@ export const useChatLogic = () => {
     ]);
   }
 
-  function handleNewChat() {
+  async function handleNewChat() {
     setMessages([]);
     setInput("");
     setError("");
     setImageFile(null);
     setCsvFile(null);
-    setSessionId(null);
     setColumns([]);
     setHead([]);
     setPending(false);
+    try {
+      const res = await getJSON<{ sessionId: string }>("/start-new-chat");
+      setSessionId(res.sessionId);
+    } catch (e: any) {
+      // If we can't start a new chat, leave session null but surface error
+      setError("Failed to start new chat: " + e.message);
+      setSessionId(null);
+    }
   }
 
   async function handleSend() {
     if (!input.trim()) return;
     setError("");
 
+    // Ensure we have a sessionId for continuity; create lazily if absent
+    let activeSession = sessionId;
+    if (!activeSession) {
+      try {
+        const res = await getJSON<{ sessionId: string }>("/start-new-chat");
+        activeSession = res.sessionId;
+        setSessionId(res.sessionId);
+      } catch (e: any) {
+        // Non-fatal for plain text / vision chat, we can proceed without session
+        console.warn("Could not obtain sessionId", e);
+      }
+    }
+
     const userModality: ChatMessage["modality"] = imageFile
       ? "vision"
-      : sessionId
+      : activeSession && (columns.length > 0 || head.length > 0)
       ? "data"
       : "text";
 
+    // If there's an image, create an object URL for thumbnail preview
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      try {
+        imageUrl = URL.createObjectURL(imageFile);
+      } catch (e) {
+        console.warn("Failed to create object URL for image", e);
+      }
+    }
+
     pushMessage({
       role: "user",
-      content: input + (imageFile ? " [image]" : ""),
+      content: input,
       modality: userModality,
+      imageUrl,
     });
 
     setPending(true);
@@ -60,7 +91,9 @@ export const useChatLogic = () => {
     try {
       if (currentImage) {
         const form = new FormData();
-        form.append("prompt", currentInput);
+        // Backend /vision-chat now expects 'message' instead of 'prompt'
+        form.append("message", currentInput);
+        if (activeSession) form.append("sessionId", activeSession);
         form.append("image", currentImage);
         const res = await postForm<{ reply: string }>("/vision-chat", form);
         pushMessage({
@@ -68,11 +101,11 @@ export const useChatLogic = () => {
           content: res.reply,
           modality: "vision",
         });
-      } else if (userModality === "data" && sessionId) {
+      } else if (userModality === "data" && activeSession) {
         const res = await postJSON<{ answer: string; artifacts?: any }>(
           "/analyze",
           {
-            sessionId,
+            sessionId: activeSession,
             question: currentInput,
           }
         );
@@ -85,6 +118,7 @@ export const useChatLogic = () => {
       } else {
         const res = await postJSON<{ reply: string }>("/chat", {
           message: currentInput,
+          sessionId: activeSession,
         });
         pushMessage({
           role: "assistant",

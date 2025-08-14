@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { AttachmentPicker } from "./AttachmentPicker";
 
 interface ChatInputProps {
@@ -32,6 +32,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const attachmentButtonRef = useRef<HTMLButtonElement | null>(null);
 
+  // Stable preview URL for selected image; revoked on change/unmount
+  const previewUrl = useMemo(() => {
+    if (!imageFile) return null;
+    try {
+      return URL.createObjectURL(imageFile);
+    } catch (e) {
+      console.warn("Could not create object URL", e);
+      return null;
+    }
+  }, [imageFile]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -57,24 +74,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           {/* Attachment indicators */}
-          <div className="flex gap-2 mb-3">
-            {imageFile && (
-              <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700/50 rounded-xl px-3 py-2 text-sm">
-                <div className="w-5 h-5 rounded bg-orange-100 dark:bg-orange-800 flex items-center justify-center">
-                  <span className="text-xs">🖼️</span>
+          <div className="flex gap-3 mb-3 items-start flex-wrap">
+            {imageFile && previewUrl && (
+              <div className="relative group">
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-orange-300 dark:border-orange-700 shadow-sm bg-slate-50 dark:bg-slate-800">
+                  <img
+                    src={previewUrl}
+                    alt={imageFile.name}
+                    className="object-cover w-full h-full"
+                  />
                 </div>
-                <span className="font-medium text-orange-700 dark:text-orange-300">
-                  Image:
-                </span>
-                <span className="max-w-[140px] truncate text-orange-600 dark:text-orange-400">
-                  {imageFile.name}
-                </span>
                 <button
                   onClick={removeImageFile}
-                  className="text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                  className="absolute -top-2 -right-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-1 shadow transition-colors"
+                  aria-label="Remove image"
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-3 h-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -87,6 +103,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     />
                   </svg>
                 </button>
+                <div className="text-[10px] mt-1 text-center text-orange-600 dark:text-orange-400 w-32 md:w-40 truncate">
+                  {imageFile.name}
+                </div>
               </div>
             )}
           </div>

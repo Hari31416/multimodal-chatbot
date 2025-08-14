@@ -15,3 +15,9 @@ export async function postForm<T>(path: string, form: FormData): Promise<T> {
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
+
+export async function getJSON<T>(path: string): Promise<T> {
+  const r = await fetch(base + path, { method: "GET" });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}

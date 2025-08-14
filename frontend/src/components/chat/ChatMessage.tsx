@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -116,22 +116,30 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
-                      code({ node, inline, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || "");
-                        return !inline && match ? (
-                          <pre className={className + " rounded-lg"} {...props}>
-                            <code>{String(children).replace(/\n$/, "")}</code>
-                          </pre>
-                        ) : (
-                          <code
+                      code({ inline, className, children, ...props }) {
+                        if (inline) {
+                          return (
+                            <code
+                              className={
+                                (className || "") +
+                                " px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700"
+                              }
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        }
+                        return (
+                          <pre
                             className={
-                              className +
-                              " px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700"
+                              (className || "") +
+                              " rounded-lg overflow-x-auto p-4 bg-slate-900/90 text-slate-100"
                             }
                             {...props}
                           >
-                            {children}
-                          </code>
+                            <code className={className}>{children}</code>
+                          </pre>
                         );
                       },
                       a({ children, ...props }) {

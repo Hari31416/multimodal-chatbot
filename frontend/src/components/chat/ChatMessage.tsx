@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { ChatMessage as ChatMessageType } from "../../types/chat";
 
 interface ChatMessageProps {
@@ -107,8 +110,45 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </div>
             <div className="flex-1 space-y-3">
               <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
-                <div className="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">
-                  {message.content}
+                <div className="text-slate-800 dark:text-slate-100 break-words">
+                  <ReactMarkdown
+                    className="prose prose-slate dark:prose-invert max-w-none text-sm"
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        return !inline && match ? (
+                          <pre className={className + " rounded-lg"} {...props}>
+                            <code>{String(children).replace(/\n$/, "")}</code>
+                          </pre>
+                        ) : (
+                          <code
+                            className={
+                              className +
+                              " px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700"
+                            }
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      },
+                      a({ children, ...props }) {
+                        return (
+                          <a
+                            {...props}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {children}
+                          </a>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </div>
               <div className="flex gap-2 items-center flex-wrap px-1">

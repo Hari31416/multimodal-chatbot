@@ -26,9 +26,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             AI Assistant
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {sessionId
-              ? `Data Session • ${sessionId.slice(0, 8)}...`
-              : "Ready to help"}
+            Ready to help
           </p>
         </div>
       </div>

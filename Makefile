@@ -54,7 +54,8 @@ $(VENVDIR)/bin/activate: backend/requirements.txt
 
 backend/run: backend/install
 	@echo -e "${GREEN}Starting FastAPI (http://localhost:8000)...${NC}"
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m uvicorn $(UVICORN_APP) $(UVICORN_OPTS)
+	@echo -e "${YELLOW}Logs will be saved to api.log${NC}"
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m uvicorn $(UVICORN_APP) $(UVICORN_OPTS) 2>&1 | tee api.log&
 
 backend/test: backend/install
 	@echo -e "${GREEN}Running backend tests...${NC}"

@@ -147,3 +147,4 @@ secrets.json
 # Temporary files
 *.tmp
 *.temp
+*temp.ipynb

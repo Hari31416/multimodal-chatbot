@@ -1,12 +1,28 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any, Union
+from typing import List, Optional, Any
+from fastapi import File
 
 
 class HealthResponse(BaseModel):
     status: str
 
 
+class StartNewChatResponse(BaseModel):
+    sessionId: str
+
+
+class AllSessionsResponse(BaseModel):
+    sessions: List[str]
+
+
 class ChatRequest(BaseModel):
+    message: str
+    sessionId: Optional[str] = Field(
+        None, description="Optional session ID for context"
+    )
+
+
+class ChatRequestVision(BaseModel):
     message: str
     sessionId: Optional[str] = Field(
         None, description="Optional session ID for context"
@@ -29,5 +45,5 @@ class AnalyzeRequest(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    answer: str
+    reply: str
     artifacts: Optional[Any] = None

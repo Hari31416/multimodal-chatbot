@@ -1,13 +1,14 @@
-# Project README: Multimodal Chatbot (FastAPI + React)
+# Multimodal Chatbot
 
-Overview
+## Overview
+
 This project is a full-stack multimodal AI chatbot that supports:
 
 - Text-based chat with an LLM
 - Chat about user-provided images (vision + text)
 - Python data analysis on user-uploaded CSVs via pandas
 
-Stack
+## Stack
 
 - Frontend: React (Vite or CRA), TypeScript (optional), fetch/axios, WebSocket (optional)
 - Backend: FastAPI, Uvicorn, Pydantic, python-multipart, aiofiles, pandas
@@ -15,21 +16,22 @@ Stack
 - Storage/State: In-memory or Redis (optional) for sessions; local FS or object storage (optional) for files
 - Deployment: Docker (optional), Nginx/Reverse proxy, HTTPS
 
-Features
+## Features
 
 - Text Chat
   - Send user messages; receive assistant replies
   - Optional streaming responses for better UX
 - Vision Chat
-  - Upload an image and provide a prompt
+  - Upload an image and provide a message (text + image multimodal)
   - The assistant analyzes the image and answers questions
 - Data Analysis
   - Upload a CSV file
   - Backend parses into a pandas DataFrame
   - Ask analysis questions; assistant runs controlled pandas operations and returns results and summaries
 - Session Management
-  - Session ID returned on CSV upload
-  - DataFrame associated with session for subsequent analysis queries
+  - Session ID returned on CSV upload or via GET /start-new-chat
+  - DataFrame and message history associated with session for subsequent analysis and chat queries
+  - GET /all-sessions returns currently active (non-expired) session IDs
 - Security and Ops
   - API keys stored on server (env vars)
   - File size/type validation
@@ -37,7 +39,7 @@ Features
   - Optional auth (JWT/cookies)
   - Basic rate limiting (optional)
 
-Architecture
+## Architecture
 
 - Frontend (React)
   - Pages/Components:
@@ -56,14 +58,18 @@ Architecture
       - Request: { message: string, sessionId?: string }
       - Response: { reply: string }
     - POST /vision-chat (multipart/form-data)
-      - Fields: prompt (text), image (file)
+      - Fields: message (text), image (file), optionally sessionId (text)
       - Response: { reply: string }
     - POST /upload-csv (multipart/form-data)
       - Field: file (UploadFile)
       - Response: { sessionId: string, columns: string[], headPreview: any[][] }
     - POST /analyze
       - Request: { sessionId: string, question: string }
-      - Response: { answer: string, artifacts?: any }
+      - Response: { reply: string, artifacts?: any }
+    - GET /start-new-chat
+      - Response: { sessionId: string }
+    - GET /all-sessions
+      - Response: { sessions: string[] }
     - GET /health
       - Response: { status: "ok" }
   - Optional WebSocket:
@@ -72,7 +78,7 @@ Architecture
     - CSV → pandas DataFrame stored in a session registry (in-memory/Redis)
     - Cleanup on TTL or explicit endpoint (optional)
 
-Data Flow
+## Data Flow
 
 1. Text chat: React -> /chat -> LLM -> reply
 2. Vision chat: React (FormData with prompt+image) -> /vision-chat -> multimodal LLM -> reply
@@ -80,7 +86,7 @@ Data Flow
    - Upload: React (FormData file) -> /upload-csv -> DataFrame stored -> sessionId returned
    - Ask: React -> /analyze (sessionId, question) -> controlled pandas ops -> result
 
-Project Structure
+## Project Structure
 
 - /frontend
   - src/
@@ -116,36 +122,38 @@ Project Structure
   - docker-compose.yml (optional)
 - README.md (this file)
 
-API Contracts
+## API Contracts
 
 - POST /chat
   - Body: { message: string, sessionId?: string }
   - Returns: { reply: string }
 - POST /vision-chat
-  - multipart/form-data: prompt (string), image (file)
+  - multipart/form-data: message (string), image (file), sessionId? (string)
   - Returns: { reply: string }
 - POST /upload-csv
   - multipart/form-data: file (csv)
   - Returns: { sessionId: string, columns: string[], headPreview: any[][] }
 - POST /analyze
   - Body: { sessionId: string, question: string }
-  - Returns: { answer: string, artifacts?: any }
+  - Returns: { reply: string, artifacts?: any }
+- GET /start-new-chat
+  - Returns: { sessionId: string }
+- GET /all-sessions
+  - Returns: { sessions: string[] }
 - GET /health
   - Returns: { status: "ok" }
 
-Model Provider Abstraction
+## Model Provider & LLM Integration
 
-- The backend uses a provider interface to support different LLM vendors:
-  - Text completion/chat
-  - Vision: accepts image bytes and prompt
-  - Streaming: optional
+- The backend now uses [litellm](https://github.com/BerriAI/litellm) for a unified async interface to multiple providers.
+- Supports multimodal (image+text) messages for vision.
+- Message history is stored per session (truncated for context window / performance).
 - Configure via env:
-  - PROVIDER=openai|...
-  - PROVIDER_API_KEY=...
-  - TEXT_MODEL=...
-  - VISION_MODEL=...
+  - LLM_MODEL=<provider/model-id> (e.g., gemini/gemini-2.0-flash)
+  - PROVIDER_API_KEY=<key> (or provider-specific keys litellm will read)
+  - (Optional) Additional provider-specific env vars supported by litellm
 
-Safety and Guardrails
+## Safety and Guardrails
 
 - File uploads
   - Enforce content-type and size limits (e.g., max 10–20 MB)
@@ -163,23 +171,31 @@ Safety and Guardrails
   - Session/DataFrame TTL (e.g., 30–120 minutes)
   - Background task to evict expired sessions
 
-Getting Started (Development)
-Prerequisites
+## Breaking Changes (Latest)
+
+- Vision endpoint form field renamed: prompt -> message
+- Analyze response field renamed: answer -> reply
+- New endpoints added: /start-new-chat, /all-sessions
+- Pydantic upgraded to v2 (schema / validation differences vs v1)
+
+## Getting Started (Development)
+
+### Prerequisites
 
 - Node.js LTS
 - Python 3.10+
 - pip/uv or Poetry
 - (Optional) Redis for session store
 
-Backend setup
+### Backend setup
 
 - cp backend/.env.example backend/.env
   - Set PROVIDER_API_KEY, TEXT_MODEL, VISION_MODEL, allowed origins, limits, etc.
 - python -m venv .venv \&\& source .venv/bin/activate
-- pip install -r backend/requirements.txt
+- pip install -r backend/requirements.txt (includes litellm, rich, e2b-code-interpreter)
 - uvicorn app.main:app --reload
 
-Frontend setup
+### Frontend setup
 
 - cd frontend
 - npm install
@@ -187,7 +203,11 @@ Frontend setup
   - VITE_API_BASE_URL=http://localhost:8000
 - npm run dev
 
-Running end-to-end
+### Optional Sandbox / Code Execution (Experimental)
+
+The project includes an e2b sandbox utility (`services/e2b_utils.py`) for executing Python code safely (e.g., future data analysis expansions). This is currently optional and not invoked by core endpoints.
+
+### Running end-to-end
 
 - Start backend: uvicorn app.main:app --reload
 - Start frontend dev server: npm run dev
@@ -196,7 +216,7 @@ Running end-to-end
   - Vision chat with an image
   - CSV upload, preview, ask analysis question
 
-Production Deployment
+### Production Deployment
 
 - Dockerize both services
 - Reverse proxy (e.g., Nginx) for TLS and routing
@@ -204,7 +224,7 @@ Production Deployment
 - Object storage (S3/GCS) if persistent file storage is needed
 - Observability: structured logs, metrics (Prometheus), tracing (optional)
 
-Configuration
+### Configuration
 
 - Backend .env
   - PROVIDER, PROVIDER_API_KEY
@@ -216,17 +236,7 @@ Configuration
 - Frontend .env
   - VITE_API_BASE_URL
 
-Testing
-
-- Backend
-  - pytest for unit tests
-  - httpx/TestClient for API tests
-- Frontend
-  - Vitest/Jest + React Testing Library
-- Integration
-  - E2E smoke tests for the core flows
-
-Security Checklist
+### Security Checklist
 
 - Do not expose API keys in frontend
 - Validate uploads and enforce size/type limits
@@ -235,15 +245,15 @@ Security Checklist
 - Add auth if multi-tenant/public
 - Log minimally; redact sensitive data
 
-Roadmap
+## Roadmap
 
 - v0.1 (MVP)
   - REST endpoints, basic React UI
   - OpenAI (or chosen) text and vision models
   - CSV upload + basic analysis (describe, summary stats, simple charts returned as data URIs)
 - v0.2
-  - Streaming responses via WebSocket
-  - Session persistence with Redis
+  - Streaming responses via WebSocket (using litellm streaming)
+  - Session persistence with Redis (replace in-memory store)
   - Improved error messages and retries
 - v0.3
   - Auth (JWT)

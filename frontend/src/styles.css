@@ -28,3 +28,12 @@ body { @apply bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100; 
 .prose th, .prose td { @apply border border-slate-200 dark:border-slate-700 px-2 py-1; }
 .prose ul { @apply list-disc pl-6; }
 .prose ol { @apply list-decimal pl-6; }
+
+/* Minimal syntax highlighting adjustments */
+pre code.hljs { background: transparent; padding: 0; }
+/* Keep our container backgrounds handled by CodeBlock; rely on imported themes for token colors. */
+/* Light mode contrast tweaks (only if theme loaded) */
+:root :not(.dark) .hljs-keyword { font-weight: 600; }
+:root :not(.dark) .hljs-title { font-weight: 600; }
+/* Atom One themes add their own background; override to transparent so our wrapper shows */
+.hljs { background: transparent !important; }

@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
 import { ChatMessage as ChatMessageType } from "../../types/chat";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -109,56 +107,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               </span>
             </div>
             <div className="flex-1 space-y-3">
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
-                <div className="text-slate-800 dark:text-slate-100 break-words">
-                  <ReactMarkdown
-                    className="prose prose-slate dark:prose-invert max-w-none text-sm"
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                    components={{
-                      code({ inline, className, children, ...props }) {
-                        if (inline) {
-                          return (
-                            <code
-                              className={
-                                (className || "") +
-                                " px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700"
-                              }
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        }
-                        return (
-                          <pre
-                            className={
-                              (className || "") +
-                              " rounded-lg overflow-x-auto p-4 bg-slate-900/90 text-slate-100"
-                            }
-                            {...props}
-                          >
-                            <code className={className}>{children}</code>
-                          </pre>
-                        );
-                      },
-                      a({ children, ...props }) {
-                        return (
-                          <a
-                            {...props}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {children}
-                          </a>
-                        );
-                      },
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
+              <MarkdownRenderer content={message.content} />
               <div className="flex gap-2 items-center flex-wrap px-1">
                 {message.modality === "data" && (
                   <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
@@ -168,15 +117,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 {pending && isLast && (
                   <span className="text-xs text-slate-400 flex items-center gap-1">
                     <div className="flex space-x-1">
-                      <div className="w-1 h-1 bg-slate-400 rounded-full animate-bounce"></div>
+                      <div className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" />
                       <div
                         className="w-1 h-1 bg-slate-400 rounded-full animate-bounce"
                         style={{ animationDelay: "0.1s" }}
-                      ></div>
+                      />
                       <div
                         className="w-1 h-1 bg-slate-400 rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
-                      ></div>
+                      />
                     </div>
                     Thinking
                   </span>

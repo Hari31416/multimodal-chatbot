@@ -1,4 +1,4 @@
-"""Data analysis helpers with a very small safe surface area for MVP."""
+"""Data analysis helpers with a very small safe surface area for MVP. Not used anymore"""
 
 import pandas as pd
 from typing import Tuple, Any, Dict
@@ -8,7 +8,7 @@ def simple_question_answer(
     df: pd.DataFrame, question: str
 ) -> Tuple[str, Dict[str, Any]]:
     q = question.lower().strip()
-    artifacts: Dict[str, Any] = {}
+    artifact: Dict[str, Any] = {}
 
     if any(k in q for k in ["column", "columns", "cols"]):
         answer = ", ".join(list(df.columns)) or "No columns"
@@ -16,12 +16,12 @@ def simple_question_answer(
         answer = f"Rows: {len(df)}"
     elif any(k in q for k in ["describe", "summary", "stats"]):
         desc = df.describe(include="all", datetime_is_numeric=True).fillna(0)
-        artifacts["describe"] = desc.reset_index().values.tolist()
-        answer = "Generated summary statistics (see artifacts.describe)."
+        artifact["describe"] = desc.reset_index().values.tolist()
+        answer = "Generated summary statistics (see artifact.describe)."
     elif "head" in q or "preview" in q:
         head = df.head(5)
-        artifacts["head"] = head.values.tolist()
-        answer = "Returned first 5 rows (see artifacts.head)."
+        artifact["head"] = head.values.tolist()
+        answer = "Returned first 5 rows (see artifact.head)."
     elif any(k in q for k in ["chart", "plot", "histogram"]):
         numeric = df.select_dtypes("number")
         if numeric.empty:
@@ -39,20 +39,18 @@ def simple_question_answer(
                 plt.close(fig)
                 buf.seek(0)
                 b64 = base64.b64encode(buf.read()).decode("utf-8")
-                artifacts["chart"] = f"data:image/png;base64,{b64}"
-                answer = (
-                    f"Generated histogram for column '{col}' (see artifacts.chart)."
-                )
+                artifact["chart"] = f"data:image/png;base64,{b64}"
+                answer = f"Generated histogram for column '{col}' (see artifact.chart)."
     else:
         # Fallback: very naive pattern - attempt mean of numeric columns
         numeric = df.select_dtypes("number")
         if not numeric.empty:
             means = numeric.mean().to_dict()
-            artifacts["means"] = means
-            answer = "Computed means for numeric columns (see artifacts.means)."
+            artifact["means"] = means
+            answer = "Computed means for numeric columns (see artifact.means)."
         else:
             answer = "Question not recognized in MVP; try asking for columns, row count, describe, or head."
-    return answer, artifacts
+    return answer, artifact
 
 
 import io, base64

@@ -5,7 +5,7 @@ import time
 from typing import Optional, Dict, Union, List, Tuple
 
 STORE: Dict[str, Tuple[Union[pd.DataFrame, Dict], float]] = {}
-TTL_SECONDS = 60 * 60  # 1 hour for MVP
+TTL_SECONDS = 60 * 60
 
 
 def put_dataframe(session_id: str, df: pd.DataFrame):
@@ -97,7 +97,3 @@ class SessionStorage:
         """Get all active session IDs."""
         self.cleanup()
         return [k.split("_", 1)[-1] for k in STORE.keys()]
-
-    def __del__(self):
-        del STORE  # Clear store on deletion
-        self._last_cleanup = time.time()

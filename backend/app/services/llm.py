@@ -3,6 +3,7 @@ from typing import List, Any, AsyncGenerator, Dict
 import os
 from dotenv import load_dotenv
 import pandas as pd
+from io import StringIO
 
 from .storage import SessionStorage
 from .files import convert_bytes_to_base64
@@ -162,6 +163,16 @@ async def vision_completion(message: str, image_bytes: bytes, session_id: str) -
     return response
 
 
+def get_info_about_df(df: pd.DataFrame) -> str:
+    columns = df.columns.tolist()
+    columns_str = ", ".join(columns)
+    info = f"The dataframe that you have acces to has the following columns: {columns_str}."
+    buffer = StringIO()
+    df.info(buf=buffer)
+    info += f"\n\nDataFrame info:\n{buffer.getvalue()}"
+    return info
+
+
 async def analyze_data(
     df: pd.DataFrame,
     message: str,
@@ -174,6 +185,8 @@ async def analyze_data(
     if past_messages is None:
         past_messages = [{"role": "system", "content": Prompts.DATA_ANALYZER}]
 
+    df_info = get_info_about_df(df)
+    message = f"{df_info}\n\n{message}"
     current_message = {"role": "user", "content": message}
     session_storage.push_messages(session_id, current_message)
     messages = [
@@ -198,7 +211,12 @@ async def analyze_data(
         )
     except Exception as e:
         logger.error(f"Error during data analysis: {e}")
-        raise e
+        return AnalyzeResponse(
+            reply="Error during data analysis. Please try again.",
+            code="",
+            artifact="",
+            artifact_is_mime_type=False,
+        )
 
     result = await handle_llm_response(
         response=response,

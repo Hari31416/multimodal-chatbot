@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import json
 import re
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 
 from .python_iterpreters import LocalPythonExecutor
 from .plotting_utils import mpl_fig_to_data_uri
@@ -51,7 +51,11 @@ def _validate_response(response: str) -> AnalysisResponseModalChatbot:
     AnalysisResponseModalChatbot
         The validated response object.
     """
-    response_dict = _try_parse_json_from_string(response)
+    try:
+        response_dict = _try_parse_json_from_string(response)
+    except ValueError as e:
+        logger.error(f"Invalid response format: {e}")
+        raise ValueError("Invalid response format from LLM") from e
     try:
         return AnalysisResponseModalChatbot.model_validate(response_dict)
     except Exception as e:
@@ -92,7 +96,17 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
     str
         The processed response.
     """
-    response = _validate_response(response)
+    try:
+        response = _validate_response(response)
+    except ValueError as e:
+        logger.error(f"Invalid response format: {e}")
+        return AnalyzeResponse(
+            reply=response,
+            code="",
+            artifact="Invalid response format from LLM. Please try again.",
+            artifact_is_mime_type=False,
+        )
+
     logger.info(f"Successfully validated response.")
     logger.debug(f"Response: {response}")
     explanation = response.explanation
@@ -113,9 +127,9 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
     if status_code != 0:
         logger.error(f"Code execution failed.")
         return AnalyzeResponse(
-            reply="Code execution failed. Please check the code and try again.",
-            code=None,
-            artifacts=None,
+            reply="Code execution failed. Please retry.",
+            code=code,
+            artifact=None,
             artifact_is_mime_type=False,
         )
 
@@ -129,7 +143,12 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
             artifact = mpl_fig_to_data_uri(artifact)
         else:
             logger.error("Artifact is not a valid plot or base64 image string.")
-            raise ValueError("Artifact is not a valid plot or base64 image string.")
+            return AnalyzeResponse(
+                reply=explanation,
+                code=code,
+                artifact="Artifact is not a valid plot or base64 image string.",
+                artifact_is_mime_type=False,
+            )
 
     elif plot == "no_plot":
         logger.info("No plot was created, returning the result as a string")
@@ -137,6 +156,6 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
     return AnalyzeResponse(
         reply=explanation,
         code=code,
-        artifacts=artifact,
+        artifact=artifact,
         artifact_is_mime_type=artifact_is_mime_type,
     )

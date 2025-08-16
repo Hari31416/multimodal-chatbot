@@ -26,7 +26,7 @@ def get_dataframe(session_id: str) -> Optional[pd.DataFrame]:
     return df
 
 
-def get_messages(session_id: str) -> Optional[Dict]:
+def get_messages(session_id: str, no_tool_response: bool = True) -> Optional[Dict]:
     """Get messages for a session, returning None if not found or expired."""
     key = f"messages_{session_id}"
     item = STORE.get(key)
@@ -39,6 +39,13 @@ def get_messages(session_id: str) -> Optional[Dict]:
         # Expired
         del STORE[key]
         return None
+
+    # remove tool responses if requested
+    messages = {
+        key: val
+        for key, val in messages.items()
+        if not (no_tool_response and key == "tool")
+    }
     return messages
 
 

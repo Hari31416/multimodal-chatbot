@@ -2,9 +2,13 @@ from litellm import acompletion
 from typing import List, Any, AsyncGenerator, Dict
 import os
 from dotenv import load_dotenv
+import pandas as pd
 
-from .storage import SessionStorage
-from .files import convert_bytes_to_base64
+from backend.app.services.storage import SessionStorage
+from backend.app.services.files import convert_bytes_to_base64
+from backend.app.prompts import Prompts
+from backend.app.analyzer import handle_llm_response
+from backend.app.models import AnalysisResponseModalChatbot
 
 load_dotenv()
 
@@ -89,7 +93,7 @@ async def text_completion(message: str, session_id: str = None) -> str:
     if not past_messages:
         # Initialize with a system message if no past messages exist
         print("No past messages found, initializing with system message.")
-        past_messages = [{"role": "system", "content": "You are a helpful assistant."}]
+        past_messages = [{"role": "system", "content": Prompts.SIMPLE_CHAT}]
     else:
         print(
             f"A total of {len(past_messages)} past messages found. Adding new message."
@@ -118,7 +122,7 @@ async def text_completion(message: str, session_id: str = None) -> str:
 async def vision_completion(message: str, image_bytes: bytes, session_id: str) -> str:
     past_messages = session_storage.get_messages(session_id)
     if past_messages is None:
-        past_messages = [{"role": "system", "content": "You are a helpful assistant."}]
+        past_messages = [{"role": "system", "content": Prompts.SIMPLE_CHAT_WITH_IMAGE}]
 
     current_message = {
         "role": "user",
@@ -151,3 +155,55 @@ async def vision_completion(message: str, image_bytes: bytes, session_id: str) -
         print(f"Error during vision completion: {e}")
         return ""
     return response
+
+
+async def analyze_data(
+    df: pd.DataFrame,
+    message: str,
+    session_id: str = None,
+) -> str:
+    """
+    Analyze the DataFrame based on the provided message.
+    """
+    past_messages = session_storage.get_messages(session_id)
+    if past_messages is None:
+        past_messages = [{"role": "system", "content": Prompts.DATA_ANALYZER}]
+
+    current_message = {"role": "system", "content": message}
+    session_storage.push_messages(session_id, current_message)
+    messages = [
+        *past_messages,
+        current_message,
+    ]
+
+    if len(messages) > 10:
+        # Limit to last 10 messages for performance
+        messages = messages[-10:]
+
+    try:
+        response = await atext_completion(
+            messages,
+            session_id=session_id,
+            response_model=AnalysisResponseModalChatbot,
+            max_tokens=1000,
+            temperature=0.5,
+        )
+        session_storage.push_messages(
+            session_id, {"role": "assistant", "content": response}
+        )
+    except Exception as e:
+        print(f"Error during data analysis: {e}")
+        return ""
+
+    explanation, artifact, artifact_is_mime_type = await handle_llm_response(
+        response=response,
+        df=df,
+    )
+
+    # if no mime type, artifact is the result of code execution
+    # push the result to session storage for future reference
+    if not artifact_is_mime_type and session_id:
+        session_storage.push_messages(
+            session_id, {"role": "assistant", "content": artifact}
+        )
+    return explanation, artifact, artifact_is_mime_type

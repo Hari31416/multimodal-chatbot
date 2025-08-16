@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
-from fastapi import File
 
 
 class HealthResponse(BaseModel):
@@ -41,9 +40,21 @@ class UploadCSVResponse(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     sessionId: str
-    question: str
+    message: str
 
 
 class AnalyzeResponse(BaseModel):
     reply: str
-    artifacts: Optional[Any] = None
+    artifacts: str
+    artifact_is_mime_type: bool
+
+
+class AnalysisResponseModalChatbot(BaseModel):
+    explanation: str = Field(
+        ..., description="2-4 sentence description of your analysis approach"
+    )
+    code: str = Field(..., description="Python code that performs the analysis")
+    plot: str = Field(
+        ...,
+        description="Either 'plot_created' if visualization made, or 'no_plot' if not",
+    )

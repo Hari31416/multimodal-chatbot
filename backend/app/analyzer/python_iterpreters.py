@@ -7,7 +7,7 @@ from datetime import datetime
 from e2b_code_interpreter import Sandbox
 from typing import Optional, Dict, Any, Callable
 
-from .local_python_interpreter import (
+from backend.app.analyzer.local_python_interpreter import (
     evaluate_python_code,
     BASE_PYTHON_TOOLS,
     BASE_BUILTIN_MODULES,
@@ -35,6 +35,35 @@ def _format_timestamp():
     return datetime.now().strftime("%H:%M:%S")
 
 
+def trim_output(output: Any, max_length=500) -> str:
+    """Trim the output to a maximum length."""
+    if isinstance(output, str):
+        return f"{output[:max_length]}..." if len(output) > max_length else output
+    elif isinstance(output, (int, float)):
+        return output
+    elif isinstance(output, list):
+        return [
+            f"{str(item)[:max_length]}..." if len(str(item)) > max_length else item
+            for item in output
+        ]
+    elif isinstance(output, dict):
+        return {
+            k: (
+                (v[:max_length] + "...")
+                if isinstance(v, str) and len(v) > max_length
+                else v
+            )
+            for k, v in output.items()
+        }
+    else:
+        # For other types, convert to string and trim
+        output = str(output)
+        if len(output) > max_length:
+            return f"{output[:max_length]}..."
+        else:
+            return output
+
+
 def show_output_and_logs(
     output: Any, logs: str, execution_count: int, show_logs: bool = True
 ) -> str:
@@ -43,6 +72,7 @@ def show_output_and_logs(
         return f"Out[{execution_count}]: <no output>"
     else:
         prefix = f"Out[{execution_count}]:"
+        output = trim_output(output)
         formatted_output = f"{prefix} {output}"
         console.print(formatted_output, style="success")
 
@@ -249,7 +279,7 @@ class LocalPythonExecutor:
         code_action: str,
         show_code: bool = True,
         show_logs: bool = True,
-    ) -> CodeOutput:
+    ) -> tuple[str, int] | None:
         """Execute code locally with rich-formatted output similar to E2BPythonInterpreter.
 
         Args:
@@ -289,7 +319,7 @@ class LocalPythonExecutor:
                 )
             except Exception:
                 console.print(str(e), style="error")
-            return None
+            return None, 1
 
         # Display results (only stdout/logs, mirroring E2B sandbox behavior)
         exec_id = self._execution_count
@@ -302,7 +332,7 @@ class LocalPythonExecutor:
             show_logs=show_logs,
         )
 
-        return output
+        return output, 0
 
     def send_variables(self, variables: dict[str, Any]):
         self.state.update(variables)

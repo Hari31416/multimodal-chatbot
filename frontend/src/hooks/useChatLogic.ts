@@ -106,22 +106,22 @@ export const useChatLogic = () => {
         const res = await postJSON<{
           reply: string;
           code: string | null;
-          artifacts: string | null;
+          artifact: string | null;
           artifact_is_mime_type: boolean;
         }>("/analyze", {
           sessionId: activeSession,
           message: currentInput,
         });
 
-        // Normalize artifacts: if mime type -> treat as chart; else textual
+        // Normalize artifact: if mime type -> treat as chart; else textual
         const isImage =
-          !!res.artifact_is_mime_type && typeof res.artifacts === "string";
+          !!res.artifact_is_mime_type && typeof res.artifact === "string";
         const normalizedArtifacts = isImage
-          ? { chart: res.artifacts, raw: res.artifacts, isMime: true }
-          : res.artifacts
+          ? { chart: res.artifact, raw: res.artifact, isMime: true }
+          : res.artifact
           ? {
-              text: String(res.artifacts),
-              raw: String(res.artifacts),
+              text: String(res.artifact),
+              raw: String(res.artifact),
               isMime: false,
             }
           : null;
@@ -130,7 +130,7 @@ export const useChatLogic = () => {
           role: "assistant",
           content: res.reply,
           modality: "data",
-          artifacts: normalizedArtifacts,
+          artifact: normalizedArtifacts,
           code: res.code || undefined,
         });
       } else {

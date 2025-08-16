@@ -128,14 +128,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </span>
                 )}
               </div>
-              {(message.artifacts || message.code) && (
+              {(message.artifact || message.code) && (
                 <div className="px-1 space-y-6">
-                  {message.artifacts && (
+                  {message.artifact && (
                     <DataArtifactViewer
-                      chart={message.artifacts.chart}
-                      text={message.artifacts.text}
-                      raw={message.artifacts.raw}
-                      isMime={message.artifacts.isMime}
+                      chart={message.artifact.chart}
+                      text={message.artifact.text}
+                      raw={message.artifact.raw}
+                      isMime={message.artifact.isMime}
                     />
                   )}
                   {message.code && <AnalysisCodeBlock code={message.code} />}

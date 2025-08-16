@@ -4,13 +4,13 @@ export interface ChatMessage {
   content: string;
   modality: "text" | "vision" | "data";
   /**
-   * For data / analysis responses we normalize artifacts into a simple shape.
+   * For data / analysis responses we normalize artifact into a simple shape.
    * chart: data URI for image based plot
    * text: textual artifact (stringified result) when not a plot
    * raw: original raw backend artifact string (for debugging / future use)
    * isMime: whether backend indicated artifact was a mime/image
    */
-  artifacts?: {
+  artifact?: {
     chart?: string;
     text?: string;
     raw?: string;

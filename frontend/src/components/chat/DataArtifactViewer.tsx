@@ -8,7 +8,7 @@ interface DataArtifactViewerProps {
 }
 
 /**
- * Renders artifacts returned from the /analyze endpoint.
+ * Renders artifact returned from the /analyze endpoint.
  * Keeps presentation concerns isolated from ChatMessage.
  */
 export const DataArtifactViewer: React.FC<DataArtifactViewerProps> = ({

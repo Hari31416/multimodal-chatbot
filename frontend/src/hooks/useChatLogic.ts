@@ -102,18 +102,36 @@ export const useChatLogic = () => {
           modality: "vision",
         });
       } else if (userModality === "data" && activeSession) {
-        const res = await postJSON<{ answer: string; artifacts?: any }>(
-          "/analyze",
-          {
-            sessionId: activeSession,
-            question: currentInput,
-          }
-        );
+        // Backend expects: { sessionId, message }
+        const res = await postJSON<{
+          reply: string;
+          code: string | null;
+          artifacts: string | null;
+          artifact_is_mime_type: boolean;
+        }>("/analyze", {
+          sessionId: activeSession,
+          message: currentInput,
+        });
+
+        // Normalize artifacts: if mime type -> treat as chart; else textual
+        const isImage =
+          !!res.artifact_is_mime_type && typeof res.artifacts === "string";
+        const normalizedArtifacts = isImage
+          ? { chart: res.artifacts, raw: res.artifacts, isMime: true }
+          : res.artifacts
+          ? {
+              text: String(res.artifacts),
+              raw: String(res.artifacts),
+              isMime: false,
+            }
+          : null;
+
         pushMessage({
           role: "assistant",
-          content: res.answer,
+          content: res.reply,
           modality: "data",
-          artifacts: res.artifacts || null,
+          artifacts: normalizedArtifacts,
+          code: res.code || undefined,
         });
       } else {
         const res = await postJSON<{ reply: string }>("/chat", {

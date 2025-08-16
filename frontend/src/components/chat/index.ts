@@ -5,3 +5,5 @@ export { EmptyState } from "./EmptyState";
 export { DatasetOverview } from "./DatasetOverview";
 export { AttachmentPicker } from "./AttachmentPicker";
 export { LoadingIndicator } from "./LoadingIndicator";
+export { DataArtifactViewer } from "./DataArtifactViewer";
+export { AnalysisCodeBlock } from "./AnalysisCodeBlock";

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ChatMessage as ChatMessageType } from "../../types/chat";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { DataArtifactViewer } from "./DataArtifactViewer";
+import { AnalysisCodeBlock } from "./AnalysisCodeBlock";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -109,11 +111,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <div className="flex-1 space-y-3">
               <MarkdownRenderer content={message.content} />
               <div className="flex gap-2 items-center flex-wrap px-1">
-                {message.modality === "data" && (
-                  <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                    📊 Data
-                  </span>
-                )}
                 {pending && isLast && (
                   <span className="text-xs text-slate-400 flex items-center gap-1">
                     <div className="flex space-x-1">
@@ -131,17 +128,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </span>
                 )}
               </div>
-              {message.artifacts && (
-                <div className="space-y-3 px-1">
-                  {message.artifacts.chart && (
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm bg-white dark:bg-slate-800/50">
-                      <img
-                        src={message.artifacts.chart}
-                        alt="Chart"
-                        className="w-full max-h-80 object-contain"
-                      />
-                    </div>
+              {(message.artifacts || message.code) && (
+                <div className="px-1 space-y-6">
+                  {message.artifacts && (
+                    <DataArtifactViewer
+                      chart={message.artifacts.chart}
+                      text={message.artifacts.text}
+                      raw={message.artifacts.raw}
+                      isMime={message.artifacts.isMime}
+                    />
                   )}
+                  {message.code && <AnalysisCodeBlock code={message.code} />}
                 </div>
               )}
             </div>

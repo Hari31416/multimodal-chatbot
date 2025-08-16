@@ -9,7 +9,7 @@ from typing import Dict, Any, Tuple
 from backend.app.analyzer.python_iterpreters import LocalPythonExecutor
 from backend.app.analyzer.plotting_utils import mpl_fig_to_data_uri
 from backend.app.utils import create_simple_logger, set_publish_matplotlib_template
-from backend.app.models import AnalysisResponseModalChatbot
+from backend.app.models import AnalysisResponseModalChatbot, AnalyzeResponse
 
 
 load_dotenv()
@@ -28,10 +28,12 @@ def _try_parse_json_from_string(response: str) -> Dict[str, Any]:
             try:
                 return json.loads(json_match.group(0))
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON from string: {e}")
+                logger.error(
+                    f"Failed to parse JSON from string: {e}\nResponse: {response}"
+                )
                 raise ValueError("Invalid JSON format in response") from e
         else:
-            logger.error("No JSON found in response string")
+            logger.error(f"No JSON found in response string.\nResponse: {response}")
             raise ValueError("No valid JSON found in response string")
 
 
@@ -74,7 +76,7 @@ def _is_artifact_mime_type(artifact: Any) -> bool:
     return isinstance(artifact, str) and artifact.startswith("data:image/")
 
 
-async def handle_llm_response(response: str, df: pd.DataFrame) -> Tuple[str, str, bool]:
+async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeResponse:
     """
     Process the LLM response to extract the relevant information.
 
@@ -110,7 +112,12 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> Tuple[str, str
     artifact, status_code = local.run_code(code)
     if status_code != 0:
         logger.error(f"Code execution failed.")
-        return explanation, code
+        return AnalyzeResponse(
+            reply="Code execution failed. Please check the code and try again.",
+            code=None,
+            artifacts=None,
+            artifact_is_mime_type=False,
+        )
 
     artifact_is_mime_type = _is_artifact_mime_type(artifact)
     if plot == "plot_created":
@@ -127,4 +134,9 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> Tuple[str, str
     elif plot == "no_plot":
         logger.info("No plot was created, returning the result as a string")
 
-    return explanation, artifact, artifact_is_mime_type
+    return AnalyzeResponse(
+        reply=explanation,
+        code=code,
+        artifacts=artifact,
+        artifact_is_mime_type=artifact_is_mime_type,
+    )

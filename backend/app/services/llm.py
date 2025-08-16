@@ -8,12 +8,17 @@ from backend.app.services.storage import SessionStorage
 from backend.app.services.files import convert_bytes_to_base64
 from backend.app.prompts import Prompts
 from backend.app.analyzer import handle_llm_response
-from backend.app.models import AnalysisResponseModalChatbot
+from backend.app.models import AnalysisResponseModalChatbot, AnalyzeResponse
+from backend.app.utils import create_simple_logger
 
 load_dotenv()
+# import litellm
+
+# litellm._turn_on_debug()
 
 model = os.getenv("LLM_MODEL", "gemini/gemini-2.0-flash")
 session_storage = SessionStorage()
+logger = create_simple_logger("llm_service")
 
 
 async def atext_completion(messages: List[Dict[str, Any]], **kwargs: Dict) -> str:
@@ -161,7 +166,7 @@ async def analyze_data(
     df: pd.DataFrame,
     message: str,
     session_id: str = None,
-) -> str:
+) -> AnalyzeResponse:
     """
     Analyze the DataFrame based on the provided message.
     """
@@ -169,7 +174,7 @@ async def analyze_data(
     if past_messages is None:
         past_messages = [{"role": "system", "content": Prompts.DATA_ANALYZER}]
 
-    current_message = {"role": "system", "content": message}
+    current_message = {"role": "user", "content": message}
     session_storage.push_messages(session_id, current_message)
     messages = [
         *past_messages,
@@ -184,7 +189,7 @@ async def analyze_data(
         response = await atext_completion(
             messages,
             session_id=session_id,
-            response_model=AnalysisResponseModalChatbot,
+            response_format=AnalysisResponseModalChatbot,
             max_tokens=1000,
             temperature=0.5,
         )
@@ -192,18 +197,18 @@ async def analyze_data(
             session_id, {"role": "assistant", "content": response}
         )
     except Exception as e:
-        print(f"Error during data analysis: {e}")
-        return ""
+        logger.error(f"Error during data analysis: {e}")
+        raise e
 
-    explanation, artifact, artifact_is_mime_type = await handle_llm_response(
+    result = await handle_llm_response(
         response=response,
         df=df,
     )
 
     # if no mime type, artifact is the result of code execution
     # push the result to session storage for future reference
-    if not artifact_is_mime_type and session_id:
+    if not result.artifact_is_mime_type and session_id:
         session_storage.push_messages(
-            session_id, {"role": "assistant", "content": artifact}
+            session_id, {"role": "assistant", "content": result.artifact}
         )
-    return explanation, artifact, artifact_is_mime_type
+    return result

@@ -2,7 +2,6 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app import models
 from backend.app.services import storage, llm, files
-from backend.app.analyzer.analyzer import handle_llm_response
 import uuid
 import io
 
@@ -83,16 +82,8 @@ async def analyze(body: models.AnalyzeRequest):
     if df is None:
         raise HTTPException(status_code=404, detail="Session not found or expired")
 
-    explanation, artifact, artifact_is_mime_type = await llm.analyze_data(
-        df=df, message=body.message, sesion_id=body.sessionId
-    )
-    out = {
-        "reply": explanation,
-        "artifacts": artifact,
-        "artifact_is_mime_type": artifact_is_mime_type,
-    }
-    out = models.AnalyzeResponse(**out)
-    return out
+    res = await llm.analyze_data(df=df, message=body.message, session_id=body.sessionId)
+    return res
 
 
 # Simple root redirect/info

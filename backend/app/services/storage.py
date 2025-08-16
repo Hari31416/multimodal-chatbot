@@ -41,11 +41,11 @@ def get_messages(session_id: str, no_tool_response: bool = True) -> Optional[Dic
         return None
 
     # remove tool responses if requested
-    messages = {
-        key: val
-        for key, val in messages.items()
-        if not (no_tool_response and key == "tool")
-    }
+    messages = [
+        message
+        for message in messages
+        if not (no_tool_response and message.get("role") == "tool")
+    ]
     return messages
 
 

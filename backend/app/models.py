@@ -45,6 +45,7 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     reply: str
+    code: str
     artifacts: str
     artifact_is_mime_type: bool
 

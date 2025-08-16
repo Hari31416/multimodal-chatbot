@@ -35,6 +35,7 @@ Your response MUST be a valid JSON object with exactly these three keys:
 **For Non-Plots**:
 - Set `result = [your_final_output]\nresult`
 - Set "Result" field to "no_plot"
+- Make sure that the `result` variable is a string that describes the output clearly in full sentences. For example, if you calculate an average, the result should be something like: `result = f'Average passenger age: {avg_age:.1f} years'\nresult`. Only using `result = avg_age` is not sufficient.
 
 ### 3. Available Function
 

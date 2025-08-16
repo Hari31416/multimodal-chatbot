@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import hljs from "highlight.js/lib/core";
-import python from "highlight.js/lib/languages/python";
+import React, { useState } from "react";
+import { CodeBlock } from "./CodeBlock";
 
 interface AnalysisCodeBlockProps {
   code: string;
@@ -10,22 +9,11 @@ interface AnalysisCodeBlockProps {
  * Displays Python analysis code with copy & wrap controls.
  * Separated for future enhancements (e.g., run locally, diffing, etc.).
  */
-hljs.registerLanguage("python", python);
-
 export const AnalysisCodeBlock: React.FC<AnalysisCodeBlockProps> = ({
   code,
 }) => {
   const [open, setOpen] = useState(false);
-  const codeRef = useRef<HTMLElement | null>(null);
   if (!code) return null;
-
-  useEffect(() => {
-    if (open && codeRef.current) {
-      try {
-        hljs.highlightElement(codeRef.current);
-      } catch {}
-    }
-  }, [open, code]);
 
   return (
     <div className="space-y-2">
@@ -53,32 +41,8 @@ export const AnalysisCodeBlock: React.FC<AnalysisCodeBlockProps> = ({
         )}
       </div>
       {open && (
-        <div id="analysis-code-block">
-          <div className="relative group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24]">
-            <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between px-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700/50">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wide font-semibold text-teal-700 dark:text-teal-300 px-1.5 py-0.5 bg-teal-100/80 dark:bg-teal-900/50 rounded-md ring-1 ring-teal-400/30">
-                  python
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(code);
-                  }}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-teal-600/80 text-white hover:bg-teal-500/80 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <pre className="mt-8 overflow-x-auto whitespace-pre p-4 pt-2 text-[13px] leading-relaxed font-mono">
-              <code ref={codeRef} className="language-python hljs">
-                {code}
-              </code>
-            </pre>
-          </div>
+        <div id="analysis-code-block" className="pt-1">
+          <CodeBlock className="language-python">{code}</CodeBlock>
         </div>
       )}
     </div>

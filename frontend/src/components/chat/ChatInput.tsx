@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from "react";
+import React, { useRef, useMemo, useEffect, useState } from "react";
 import { AttachmentPicker } from "./AttachmentPicker";
 
 interface ChatInputProps {
@@ -31,6 +31,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   fileInputCsvRef,
 }) => {
   const attachmentButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [focused, setFocused] = useState(false);
 
   // Stable preview URL for selected image; revoked on change/unmount
   const previewUrl = useMemo(() => {
@@ -69,8 +70,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const idle = !focused && input.trim().length === 0 && !imageFile;
+
   return (
-    <div className="border-t border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 px-6 py-4">
+    <div
+      className={`border-t border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 px-6 transition-[padding] duration-200 ${
+        idle ? "py-2" : "py-4"
+      }`}
+    >
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           {/* Attachment indicators */}
@@ -111,7 +118,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           {/* Input container */}
-          <div className="relative flex items-end gap-3 rounded-2xl border border-slate-300/60 dark:border-slate-600/60 bg-white dark:bg-slate-800 shadow-lg hover:shadow-xl transition-shadow duration-200 overflow-hidden">
+          <div
+            className={`relative flex items-end gap-3 rounded-2xl border border-slate-300/60 dark:border-slate-600/60 bg-white dark:bg-slate-800 shadow-lg hover:shadow-xl transition-[box-shadow,background,transform] duration-200 overflow-hidden ${
+              idle ? "scale-[0.98]" : "scale-100"
+            }`}
+          >
             {/* Attachment button */}
             <div className="relative p-3">
               <button
@@ -155,11 +166,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </div>
 
             {/* Text input */}
-            <div className="flex-1 py-3 pr-3">
+            <div className={`flex-1 ${idle ? "py-2" : "py-3"} pr-3`}>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
                 placeholder={
                   imageFile
                     ? "Describe what you see in the image..."
@@ -168,17 +181,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     : "Type your message here..."
                 }
                 rows={1}
-                className="w-full resize-none bg-transparent focus:outline-none text-sm leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 max-h-32 min-h-[1.5rem]"
+                className={`w-full resize-none bg-transparent focus:outline-none text-sm leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 max-h-32 transition-[min-height] duration-200 ${
+                  idle ? "min-h-[1.1rem]" : "min-h-[1.5rem]"
+                }`}
                 style={{
                   height: "auto",
-                  minHeight: "1.5rem",
+                  minHeight: idle ? "1.1rem" : "1.5rem",
                 }}
                 onInput={handleTextareaInput}
               />
             </div>
 
             {/* Send button */}
-            <div className="p-3">
+            <div className={`p-${idle ? "2" : "3"}`}>
               <button
                 onClick={onSend}
                 disabled={pending || !input.trim()}

@@ -7,3 +7,4 @@ export { AttachmentPicker } from "./AttachmentPicker";
 export { LoadingIndicator } from "./LoadingIndicator";
 export { DataArtifactViewer } from "./DataArtifactViewer";
 export { AnalysisCodeBlock } from "./AnalysisCodeBlock";
+export { DatasetModal } from "./DatasetModal";

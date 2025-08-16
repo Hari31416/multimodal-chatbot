@@ -4,8 +4,8 @@ import {
   ChatMessage,
   ChatInput,
   EmptyState,
-  DatasetOverview,
   LoadingIndicator,
+  DatasetModal,
 } from "./chat";
 import { useChatLogic } from "../hooks/useChatLogic";
 
@@ -16,6 +16,7 @@ interface UnifiedChatProps {
 
 const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [showDatasetModal, setShowDatasetModal] = useState(false);
   const fileInputImageRef = useRef<HTMLInputElement | null>(null);
   const fileInputCsvRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -80,6 +81,8 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
         setDark={setDark}
         onNewChat={handleNewChatWithCleanup}
         hasMessages={messages.length > 0}
+        onShowDataset={() => setShowDatasetModal(true)}
+        datasetAvailable={columns.length > 0}
       />
 
       {/* Messages Container */}
@@ -117,10 +120,12 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
         fileInputCsvRef={fileInputCsvRef}
       />
 
-      {/* Dataset Overview */}
-      <div className="px-6 pb-4">
-        <DatasetOverview columns={columns} head={head} />
-      </div>
+      <DatasetModal
+        open={showDatasetModal}
+        onClose={() => setShowDatasetModal(false)}
+        columns={columns}
+        head={head}
+      />
 
       {/* Hidden file inputs */}
       <input

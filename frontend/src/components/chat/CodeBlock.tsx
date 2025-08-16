@@ -1,4 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import hljs from "highlight.js/lib/core";
+import python from "highlight.js/lib/languages/python";
+import javascript from "highlight.js/lib/languages/javascript";
+import typescript from "highlight.js/lib/languages/typescript";
+import jsonLang from "highlight.js/lib/languages/json";
+import bash from "highlight.js/lib/languages/bash";
+
+// Register common languages once
+try {
+  hljs.registerLanguage("python", python);
+  hljs.registerLanguage("javascript", javascript);
+  hljs.registerLanguage("typescript", typescript);
+  hljs.registerLanguage("json", jsonLang);
+  hljs.registerLanguage("bash", bash);
+} catch {
+  // ignore duplicate registration errors during HMR
+}
 
 // Utility: flatten React children to plain text (used for copy)
 const extractText = (node: any): string => {
@@ -22,6 +39,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const codeRef = useRef<HTMLElement | null>(null);
 
   const raw = extractText(children).replace(/\s+$/g, "");
   const lang = className?.match(/language-([\w+-]+)/)?.[1];
@@ -39,6 +57,35 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       setTimeout(() => setCopied(false), 1400);
     });
   };
+
+  // Determine if children already contain span highlighting tokens (from rehype-highlight)
+  const hasPreTokenized = (() => {
+    // crude check: if any child is a React element with a class starting hljs-
+    const inspect = (node: any): boolean => {
+      if (!node) return false;
+      if (Array.isArray(node)) return node.some(inspect);
+      if (React.isValidElement(node)) {
+        const cls = (node.props?.className || "") as string;
+        if (/hljs-/.test(cls)) return true;
+        return inspect(node.props?.children);
+      }
+      return false;
+    };
+    return inspect(children);
+  })();
+
+  useEffect(() => {
+    if (!codeRef.current) return;
+    if (hasPreTokenized) return; // already highlighted by rehype
+    const lang = className?.match(/language-([\w+-]+)/)?.[1];
+    if (!lang) return;
+    try {
+      const result = hljs.highlight(raw, { language: lang });
+      codeRef.current.innerHTML = result.value;
+    } catch {
+      // fallback: leave plain text
+    }
+  }, [raw, className, hasPreTokenized]);
 
   return (
     <div className="relative group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24]">
@@ -82,11 +129,11 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre"
           } p-4 pt-2 text-[13px] leading-relaxed font-mono bg-transparent border-none transition-colors`}
         >
-          {/* Render original children to preserve <span class="hljs-..."> tokens */}
           <code
+            ref={codeRef}
             className={`${className} hljs block text-slate-900 dark:text-slate-100`}
           >
-            {children}
+            {hasPreTokenized ? children : raw}
           </code>
         </pre>
       </div>

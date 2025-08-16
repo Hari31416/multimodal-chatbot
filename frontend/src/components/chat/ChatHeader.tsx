@@ -6,6 +6,8 @@ interface ChatHeaderProps {
   setDark: (dark: boolean) => void;
   onNewChat: () => void;
   hasMessages: boolean;
+  onShowDataset: () => void;
+  datasetAvailable?: boolean;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -14,6 +16,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   setDark,
   onNewChat,
   hasMessages,
+  onShowDataset,
+  datasetAvailable = false,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
@@ -42,6 +46,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
+        {datasetAvailable && (
+          <button
+            onClick={onShowDataset}
+            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/90 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            aria-label="Show dataset overview"
+          >
+            <span className="text-xs">📊</span>
+            <span className="hidden sm:inline">Dataset</span>
+          </button>
+        )}
         {hasMessages && (
           <button
             onClick={onNewChat}

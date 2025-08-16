@@ -6,10 +6,10 @@ import json
 import re
 from typing import Dict, Any, Tuple
 
-from backend.app.analyzer.python_iterpreters import LocalPythonExecutor
-from backend.app.analyzer.plotting_utils import mpl_fig_to_data_uri
-from backend.app.utils import create_simple_logger, set_publish_matplotlib_template
-from backend.app.models import AnalysisResponseModalChatbot, AnalyzeResponse
+from .python_iterpreters import LocalPythonExecutor
+from .plotting_utils import mpl_fig_to_data_uri
+from ..utils import create_simple_logger, set_publish_matplotlib_template
+from ..models import AnalysisResponseModalChatbot, AnalyzeResponse
 
 
 load_dotenv()

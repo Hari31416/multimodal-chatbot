@@ -7,7 +7,7 @@ from datetime import datetime
 from e2b_code_interpreter import Sandbox
 from typing import Optional, Dict, Any, Callable
 
-from backend.app.analyzer.local_python_interpreter import (
+from .local_python_interpreter import (
     evaluate_python_code,
     BASE_PYTHON_TOOLS,
     BASE_BUILTIN_MODULES,

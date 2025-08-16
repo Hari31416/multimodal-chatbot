@@ -1,1 +1,1 @@
-from backend.app.prompts.prompts import Prompts
+from .prompts import Prompts

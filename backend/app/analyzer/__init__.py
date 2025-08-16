@@ -1,1 +1,1 @@
-from backend.app.analyzer.analyzer import handle_llm_response
+from .analyzer import handle_llm_response

@@ -1,7 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app import models
-from backend.app.services import storage, llm, files
+
+# Use relative imports so the package can be deployed without the top-level 'backend' directory
+from . import models
+from .services import storage, llm, files
 import uuid
 import io
 

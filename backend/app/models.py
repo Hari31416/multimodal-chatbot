@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union, Dict
 
 
 class HealthResponse(BaseModel):
@@ -11,7 +11,11 @@ class StartNewChatResponse(BaseModel):
 
 
 class AllSessionsResponse(BaseModel):
-    sessions: List[str]
+    sessionIds: List[str]
+    titles: List[str] = Field(
+        default_factory=list,
+        description="Optional titles for each session, if available",
+    )
 
 
 class ChatRequest(BaseModel):
@@ -30,6 +34,16 @@ class ChatRequestVision(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class OneChatMessage(BaseModel):
+    role: str
+    content: Union[str, List[Dict[str, Any]]]
+
+
+class AllChatResponse(BaseModel):
+    sessionId: str
+    messages: List[OneChatMessage]
 
 
 class UploadCSVResponse(BaseModel):
@@ -59,3 +73,10 @@ class AnalysisResponseModalChatbot(BaseModel):
         ...,
         description="Either 'plot_created' if visualization made, or 'no_plot' if not",
     )
+
+
+class SessionInfo(BaseModel):
+    session_id: str
+    created_at: float
+    last_accessed: float
+    title: Optional[str] = "Working Session"

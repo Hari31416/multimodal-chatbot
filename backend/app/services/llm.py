@@ -3,9 +3,8 @@ from typing import List, Any, AsyncGenerator, Dict
 import os
 from dotenv import load_dotenv
 import pandas as pd
-from io import StringIO
 
-from .storage import SessionStorage
+from .redis_storage import session_storage
 from .files import convert_bytes_to_base64
 from ..prompts import Prompts
 from ..analyzer import handle_llm_response
@@ -15,7 +14,6 @@ from ..utils import create_simple_logger
 load_dotenv()
 
 model = os.getenv("LLM_MODEL", "gemini/gemini-2.0-flash")
-session_storage = SessionStorage()
 logger = create_simple_logger(__name__)
 MAX_MESSAGES = 20
 
@@ -89,28 +87,43 @@ async def atext_completion_stream(
             yield new_part
 
 
-async def text_completion(message: str, session_id: str = None) -> str:
+def _handle_messages_push(
+    session_id: str, current_message: Dict[str, Any], system_prompt: str
+) -> None:
+    """Helper function to handle pushing messages to session storage."""
     past_messages = session_storage.get_messages(session_id)
+
     if past_messages is None:
-        past_messages = []
-
-    if not past_messages:
-        # Initialize with a system message if no past messages exist
-        print("No past messages found, initializing with system message.")
-        past_messages = [{"role": "system", "content": Prompts.SIMPLE_CHAT}]
-    else:
-        print(
-            f"A total of {len(past_messages)} past messages found. Adding new message."
+        logger.info(
+            f"No past messages found for session {session_id}, initializing with system message."
         )
-    current_message = [
-        {"role": "user", "content": message},
-    ]
-    session_storage.push_messages(session_id, current_message)
-    messages = past_messages + current_message
+        session_storage.put_session_id(session_id)
+        past_messages = [{"role": "system", "content": system_prompt}]
+        session_storage.push_messages(session_id, past_messages[0])
+    else:
+        logger.info(
+            f"A total of {len(past_messages)} past messages found for session {session_id}. Adding new message."
+        )
 
-    if len(messages) > 10:
-        # Limit to last 10 messages for performance
-        messages = messages[-10:]
+    session_storage.push_messages(session_id, current_message)
+    messages = past_messages + [current_message]
+
+    if len(messages) > MAX_MESSAGES:
+        logger.warning(
+            f"Session {session_id} has more than {MAX_MESSAGES} messages, limiting to last {MAX_MESSAGES}."
+        )
+        messages = messages[-MAX_MESSAGES:]
+    return messages
+
+
+async def text_completion(message: str, session_id: str = None) -> str:
+    system_prompt = Prompts.SIMPLE_CHAT
+    current_message = {"role": "user", "content": message}
+    messages = _handle_messages_push(
+        session_id=session_id,
+        current_message=current_message,
+        system_prompt=system_prompt,
+    )
 
     try:
         response = await atext_completion(messages, session_id=session_id)
@@ -124,10 +137,7 @@ async def text_completion(message: str, session_id: str = None) -> str:
 
 
 async def vision_completion(message: str, image_bytes: bytes, session_id: str) -> str:
-    past_messages = session_storage.get_messages(session_id)
-    if past_messages is None:
-        past_messages = [{"role": "system", "content": Prompts.SIMPLE_CHAT_WITH_IMAGE}]
-
+    system_prompt = Prompts.SIMPLE_CHAT_WITH_IMAGE
     current_message = {
         "role": "user",
         "content": [
@@ -140,15 +150,11 @@ async def vision_completion(message: str, image_bytes: bytes, session_id: str) -
             },
         ],
     }
-    session_storage.push_messages(session_id, current_message)
-    messages = [
-        *past_messages,
-        current_message,
-    ]
-
-    if len(messages) > MAX_MESSAGES:
-        # Limit to last MAX_MESSAGES messages for performance
-        messages = messages[-MAX_MESSAGES:]
+    messages = _handle_messages_push(
+        session_id=session_id,
+        current_message=current_message,
+        system_prompt=system_prompt,
+    )
 
     try:
         response = await atext_completion(messages, session_id=session_id)
@@ -169,25 +175,14 @@ async def analyze_data(
     """
     Analyze the DataFrame based on the provided message.
     """
-    past_messages = session_storage.get_messages(session_id)
-    if past_messages is None:
-        past_messages = [
-            {
-                "role": "system",
-                "content": Prompts.format_system_prompt_for_analyzer(df),
-            }
-        ]
-
+    system_prompt = Prompts.format_system_prompt_for_analyzer(df)
     current_message = {"role": "user", "content": message}
-    session_storage.push_messages(session_id, current_message)
-    messages = [
-        *past_messages,
-        current_message,
-    ]
 
-    if len(messages) > MAX_MESSAGES:
-        # Limit to last MAX_MESSAGES messages for performance
-        messages = messages[-MAX_MESSAGES:]
+    messages = _handle_messages_push(
+        session_id=session_id,
+        current_message=current_message,
+        system_prompt=system_prompt,
+    )
 
     try:
         response = await atext_completion(

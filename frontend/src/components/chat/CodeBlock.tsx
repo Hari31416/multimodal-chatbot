@@ -5,6 +5,7 @@ import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";
 import jsonLang from "highlight.js/lib/languages/json";
 import bash from "highlight.js/lib/languages/bash";
+import latex from "highlight.js/lib/languages/latex";
 
 // Register common languages once
 try {
@@ -13,6 +14,8 @@ try {
   hljs.registerLanguage("typescript", typescript);
   hljs.registerLanguage("json", jsonLang);
   hljs.registerLanguage("bash", bash);
+  hljs.registerLanguage("latex", latex);
+  hljs.registerLanguage("tex", latex); // alias for latex
 } catch {
   // ignore duplicate registration errors during HMR
 }
@@ -88,7 +91,10 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   }, [raw, className, hasPreTokenized]);
 
   return (
-    <div className="relative group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24]">
+    <div
+      className="relative not-prose group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24]"
+      style={{ alignSelf: "flex-start" }}
+    >
       <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between px-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700/50">
         <div className="flex items-center gap-2">
           {lang && (
@@ -124,18 +130,22 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
         </div>
       </div>
       <div className="relative">
-        <pre
-          className={`${className || ""} mt-8 overflow-x-auto ${
-            wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre"
-          } p-4 pt-2 text-[13px] leading-relaxed font-mono bg-transparent border-none transition-colors`}
-        >
-          <code
-            ref={codeRef}
-            className={`${className} hljs block text-slate-900 dark:text-slate-100`}
+        <div className="w-full">
+          <pre
+            className={`${className || ""} mt-8 ${
+              wrap
+                ? "overflow-hidden whitespace-pre-wrap break-words"
+                : "overflow-x-auto whitespace-pre"
+            } w-full p-4 pt-2 text-[13px] leading-relaxed font-mono bg-transparent border-none transition-colors`}
           >
-            {hasPreTokenized ? children : raw}
-          </code>
-        </pre>
+            <code
+              ref={codeRef}
+              className={`${className} hljs block text-slate-900 dark:text-slate-100`}
+            >
+              {hasPreTokenized ? children : raw}
+            </code>
+          </pre>
+        </div>
       </div>
     </div>
   );

@@ -37,3 +37,4 @@ pre code.hljs { background: transparent; padding: 0; }
 :root :not(.dark) .hljs-title { font-weight: 600; }
 /* Atom One themes add their own background; override to transparent so our wrapper shows */
 .hljs { background: transparent !important; }
+

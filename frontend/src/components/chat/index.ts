@@ -8,3 +8,4 @@ export { LoadingIndicator } from "./LoadingIndicator";
 export { DataArtifactViewer } from "./DataArtifactViewer";
 export { AnalysisCodeBlock } from "./AnalysisCodeBlock";
 export { DatasetModal } from "./DatasetModal";
+export { default as Sidebar } from "./Sidebar";

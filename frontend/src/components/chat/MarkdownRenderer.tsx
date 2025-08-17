@@ -17,7 +17,16 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     <ReactMarkdown
       className="prose prose-slate dark:prose-invert max-w-none text-sm"
       remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeHighlight, rehypeKatex]}
+      rehypePlugins={[
+        [
+          rehypeHighlight,
+          {
+            ignoreMissing: true,
+            subset: false,
+          },
+        ],
+        rehypeKatex,
+      ]}
       components={{
         p({ children }) {
           if (Array.isArray(children) && children.length === 1) {

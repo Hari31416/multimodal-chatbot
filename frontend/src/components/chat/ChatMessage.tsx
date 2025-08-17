@@ -3,6 +3,7 @@ import { ChatMessage as ChatMessageType } from "../../types/chat";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { DataArtifactViewer } from "./DataArtifactViewer";
 import { AnalysisCodeBlock } from "./AnalysisCodeBlock";
+import { LazyDataImage } from "./LazyDataImage";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -71,11 +72,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm w-64 h-64 bg-slate-50 dark:bg-slate-800 group relative focus:outline-none focus:ring-2 focus:ring-teal-500"
                   aria-label="View full image"
                 >
-                  <img
-                    src={message.imageUrl}
+                  <LazyDataImage
+                    dataUrl={message.imageUrl}
                     alt="User upload"
+                    wrapperClassName="w-full h-full"
                     className="object-cover w-full h-full transition-transform duration-200 group-hover:scale-105"
-                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                     Click to enlarge
@@ -109,7 +110,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               </span>
             </div>
             <div className="flex-1 space-y-3">
-              <MarkdownRenderer content={message.content} />
+              {message.modality === "vision" && message.imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setShowImage(true)}
+                  className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm w-56 h-56 bg-slate-50 dark:bg-slate-800 group relative focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  aria-label="View image"
+                >
+                  <LazyDataImage
+                    dataUrl={message.imageUrl}
+                    alt="Vision input"
+                    wrapperClassName="w-full h-full"
+                    className="object-cover w-full h-full transition-transform duration-200 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 flex items-center justify-center text-white text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    Click to enlarge
+                  </div>
+                </button>
+              )}
+              <div className="markdown-output">
+                <MarkdownRenderer content={message.content} />
+              </div>
               <div className="flex gap-2 items-center flex-wrap px-1">
                 {pending && isLast && (
                   <span className="text-xs text-slate-400 flex items-center gap-1">

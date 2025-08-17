@@ -2,6 +2,11 @@ import { useState } from "react";
 import { postJSON, postForm, getJSON } from "../api/client";
 import { ChatMessage } from "../types/chat";
 
+interface BackendMessage {
+  role: string;
+  content: any; // may be string or multimodal array
+}
+
 export const useChatLogic = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -21,6 +26,94 @@ export const useChatLogic = () => {
         ...partial,
       },
     ]);
+  }
+
+  function loadSessionMessages(
+    sessionId: string,
+    backendMessages: BackendMessage[]
+  ) {
+    const converted: ChatMessage[] = backendMessages.map((msg, index) => {
+      let modality: ChatMessage["modality"] = "text";
+      let content: string = "";
+      let imageUrl: string | undefined;
+      let code: string | undefined;
+      let artifact: ChatMessage["artifact"]; // possibly undefined
+
+      if (Array.isArray(msg.content)) {
+        // Vision style content: list of parts
+        const textPart = msg.content.find((p: any) => p?.type === "text");
+        const imagePart = msg.content.find((p: any) => p?.type === "image_url");
+        content = textPart?.text || "";
+        if (imagePart?.image_url?.url) {
+          modality = "vision";
+          imageUrl = imagePart.image_url.url; // data URL
+        }
+      } else if (typeof msg.content === "string") {
+        // Try to detect serialized analysis object
+        const rawStr = msg.content.trim();
+        let parsed: any = null;
+        if (rawStr.startsWith("{") && rawStr.endsWith("}")) {
+          try {
+            parsed = JSON.parse(rawStr);
+          } catch {
+            // not valid JSON, treat as plain string
+          }
+        }
+        if (
+          parsed &&
+          typeof parsed.explanation === "string" &&
+          (typeof parsed.code === "string" || typeof parsed.plot === "string")
+        ) {
+          modality = "data";
+          content = parsed.explanation;
+          if (typeof parsed.code === "string" && parsed.code.trim()) {
+            code = parsed.code;
+          }
+          // Ignore plot/image for history per requirement
+        } else {
+          content = msg.content;
+        }
+      } else if (msg.content && typeof msg.content === "object") {
+        // Data analysis history object pattern: { explanation, code?, plot? }
+        const c: any = msg.content;
+        const hasAnalysisShape =
+          typeof c.explanation === "string" &&
+          (typeof c.code === "string" || typeof c.plot === "string");
+        if (hasAnalysisShape) {
+          modality = "data";
+          content = c.explanation;
+          if (typeof c.code === "string" && c.code.trim()) {
+            code = c.code;
+          }
+          // Ignore plot artifact in history objects per requirement
+        } else {
+          // Fallback: stringifiable object
+          try {
+            content = JSON.stringify(msg.content);
+          } catch {
+            content = String(msg.content);
+          }
+        }
+      }
+
+      return {
+        id: `${sessionId}-${index}`,
+        role: (msg.role as "user" | "assistant") || "assistant",
+        content,
+        modality,
+        imageUrl,
+        code,
+        artifact,
+      } as ChatMessage;
+    });
+
+    setMessages(converted);
+    setSessionId(sessionId);
+    setInput("");
+    setError("");
+    setImageFile(null);
+    setCsvFile(null);
+    setPending(false);
   }
 
   async function handleNewChat() {
@@ -204,5 +297,6 @@ export const useChatLogic = () => {
     handleNewChat,
     handleSend,
     handleCsvUpload,
+    loadSessionMessages,
   };
 };

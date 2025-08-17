@@ -4,116 +4,122 @@ interface ChatHeaderProps {
   sessionId: string | null;
   dark: boolean;
   setDark: (dark: boolean) => void;
-  onNewChat: () => void;
+  // onNewChat: () => void; // Removed New Chat button logic
   hasMessages: boolean;
   onShowDataset: () => void;
   datasetAvailable?: boolean;
+  onToggleSidebar?: () => void;
+  sidebarOpen?: boolean;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   sessionId,
   dark,
   setDark,
-  onNewChat,
+  // onNewChat, // Removed New Chat button logic
   hasMessages,
   onShowDataset,
   datasetAvailable = false,
+  onToggleSidebar,
+  sidebarOpen = false,
 }) => {
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center">
-          <span className="text-white text-sm font-semibold">AI</span>
+    <header className="border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 px-4 md:px-6 py-3 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={
+                    sidebarOpen
+                      ? "M6 18L18 6M6 6l12 12" // X icon
+                      : "M3 6h18M3 12h12m0 0l-4-4m4 4l-4 4M3 18h18" // menu + arrow motif
+                  }
+                />
+              </svg>
+            </button>
+          )}
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-semibold">AI</span>
+          </div>
+          <div className="flex flex-col truncate">
+            <span className="font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+              AI Assistant
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight hidden sm:inline">
+              Ready to help
+            </span>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-slate-800 dark:text-slate-100">
-            AI Assistant
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Ready to help
+        <div className="hidden md:flex flex-col items-center text-center px-2">
+          <h1 className="text-base md:text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            Multimodal Chatbot
+          </h1>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Unified text · vision · data
           </p>
         </div>
-      </div>
-
-      {/* Center brand information */}
-      <div className="hidden md:flex flex-col items-center text-center">
-        <h1 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
-          Multimodal Chatbot
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Unified text, vision & data analysis assistant
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {datasetAvailable && (
-          <button
-            onClick={onShowDataset}
-            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/90 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-            aria-label="Show dataset overview"
-          >
-            <span className="text-xs">📊</span>
-            <span className="hidden sm:inline">Dataset</span>
-          </button>
-        )}
-        {hasMessages && (
-          <button
-            onClick={onNewChat}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors"
-            aria-label="Start new chat"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <div className="flex items-center gap-2">
+          {datasetAvailable && (
+            <button
+              onClick={onShowDataset}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/90 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+              aria-label="Show dataset overview"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New Chat
-          </button>
-        )}
-        <button
-          onClick={() => setDark(!dark)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-          aria-label="Toggle dark mode"
-        >
-          {dark ? (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-              />
-            </svg>
+              <span className="text-xs">📊</span>
+              <span className="hidden sm:inline">Dataset</span>
+            </button>
           )}
-        </button>
+          <button
+            onClick={() => setDark(!dark)}
+            className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {dark ? (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
   );
 };

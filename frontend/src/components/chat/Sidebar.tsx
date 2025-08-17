@@ -39,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const loadedOnceRef = useRef(false);
   // Cache reference for session list + timestamp
   const sessionsCacheRef = useRef<{
@@ -46,6 +47,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     fetchedAt: number;
   } | null>(null);
   const SESSIONS_TTL_MS = 60_000; // 1 minute TTL (adjust as needed)
+
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   // Prefetch sessions on first mount
   useEffect(() => {
@@ -61,6 +64,21 @@ const Sidebar: React.FC<SidebarProps> = ({
       loadSessions();
     }
   }, [isOpen]);
+
+  // Close on outside click (desktop). Mobile already uses overlay.
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target as Node)
+      ) {
+        onToggle();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isOpen, onToggle]);
 
   const loadSessions = async (opts: { force?: boolean } = {}) => {
     const { force = false } = opts;
@@ -114,23 +132,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const handleDeleteSession = async (
-    sessionId: string,
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    e.stopPropagation();
-    if (deleting) return; // prevent concurrent
-    const confirmDelete = window.confirm("Delete this chat session?");
-    if (!confirmDelete) return;
+  const handleDeleteSession = async (sessionId: string) => {
+    if (deleting) return;
     setDeleting(sessionId);
     setError("");
     try {
       const formData = new FormData();
       formData.append("sessionId", sessionId);
       await postForm("/delete-session", formData);
-
       setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
-      // Update cache
       if (sessionsCacheRef.current) {
         sessionsCacheRef.current = {
           ...sessionsCacheRef.current,
@@ -139,7 +149,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           ),
         };
       }
-      // If current session deleted, optionally start a fresh one
       if (currentSessionId === sessionId) {
         try {
           await onNewChat();
@@ -149,6 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       setError("Failed to delete session: " + err.message);
     } finally {
       setDeleting(null);
+      setConfirmingId(null);
     }
   };
 
@@ -194,6 +204,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-hidden={!isOpen}
+        ref={sidebarRef}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -296,9 +307,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                       type="button"
                       aria-label="Delete session"
                       title="Delete session"
-                      onClick={(e) =>
-                        handleDeleteSession(session.session_id, e)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmingId(session.session_id);
+                      }}
                       disabled={deleting === session.session_id}
                       className={`absolute top-2 right-2 p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-opacity ${
                         deleting === session.session_id
@@ -348,6 +360,55 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
+          {confirmingId && (
+            <div
+              className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-700">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                  <svg
+                    className="w-5 h-5 text-red-500"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v4m0 4h.01M4.93 4.93l14.14 14.14M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    Delete Chat
+                  </h3>
+                </div>
+                <div className="px-5 py-4 text-sm text-slate-600 dark:text-slate-300 space-y-3">
+                  <p>
+                    Are you sure you want to delete this chat session? This
+                    action cannot be undone.
+                  </p>
+                </div>
+                <div className="px-5 py-3 flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-700/30 rounded-b-lg">
+                  <button
+                    onClick={() => setConfirmingId(null)}
+                    className="px-3 py-1.5 rounded-md text-sm font-medium bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSession(confirmingId)}
+                    className="px-3 py-1.5 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700 text-white shadow-sm disabled:opacity-60"
+                    disabled={deleting === confirmingId}
+                  >
+                    {deleting === confirmingId ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

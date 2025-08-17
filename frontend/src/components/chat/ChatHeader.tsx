@@ -10,6 +10,7 @@ interface ChatHeaderProps {
   datasetAvailable?: boolean;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
+  onNewChat?: () => void; // New chat trigger when sidebar collapsed
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -22,6 +23,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   datasetAvailable = false,
   onToggleSidebar,
   sidebarOpen = false,
+  onNewChat,
 }) => {
   return (
     <header className="border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 px-4 md:px-6 py-3 flex flex-col gap-2">
@@ -33,21 +35,62 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
+              {sidebarOpen ? (
+                // Collapse (chevron-left within panel shape)
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 5a2 2 0 012-2h8a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11 8l-3 4 3 4"
+                  />
+                </svg>
+              ) : (
+                // Open (hamburger menu)
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 6h16M4 12h16M4 18h10"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {/* When sidebar is closed, show quick new-chat + button (desktop & mobile) */}
+          {!sidebarOpen && onNewChat && (
+            <button
+              onClick={onNewChat}
+              aria-label="Start new chat"
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white transition-colors shadow-sm"
+            >
               <svg
                 className="w-5 h-5"
+                viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                viewBox="0 0 24 24"
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={
-                    sidebarOpen
-                      ? "M6 18L18 6M6 6l12 12" // X icon
-                      : "M3 6h18M3 12h12m0 0l-4-4m4 4l-4 4M3 18h18" // menu + arrow motif
-                  }
+                  d="M12 5v14M5 12h14"
                 />
               </svg>
             </button>

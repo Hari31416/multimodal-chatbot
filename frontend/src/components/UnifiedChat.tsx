@@ -112,6 +112,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           datasetAvailable={columns.length > 0}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           sidebarOpen={sidebarOpen}
+          onNewChat={handleNewChatWithCleanup}
         />
 
         {/* Messages Container */}

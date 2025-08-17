@@ -1,5 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Use relative imports so the package can be deployed without the top-level 'backend' directory
 from . import models
@@ -9,10 +13,11 @@ import io
 
 app = FastAPI(title="Multimodal Chatbot", version="0.1.0")
 
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # Basic CORS (adjust via env/config in real usage)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

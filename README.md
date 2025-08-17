@@ -31,7 +31,9 @@ This project is a full-stack multimodal AI chatbot that supports:
 - Session Management
   - Session ID returned on CSV upload or via GET /start-new-chat
   - DataFrame and message history associated with session for subsequent analysis and chat queries
-  - GET /all-sessions returns currently active (non-expired) session IDs
+  - Sidebar lists prior sessions (cached client-side with short TTL) and allows switching
+  - Delete individual sessions via POST /delete-session
+  - GET /all-sessions returns currently active (non-expired) session IDs plus optional titles
 - Security and Ops
   - API keys stored on server (env vars)
   - File size/type validation
@@ -65,11 +67,14 @@ This project is a full-stack multimodal AI chatbot that supports:
       - Response: { sessionId: string, columns: string[], headPreview: any[][] }
     - POST /analyze
       - Request: { sessionId: string, question: string }
-      - Response: { reply: string, artifacts?: any }
+      - Response: { reply: string, artifact?: any }
     - GET /start-new-chat
       - Response: { sessionId: string }
     - GET /all-sessions
-      - Response: { sessions: string[] }
+      - Response: { sessionIds: string[], titles: string[] }
+    - POST /delete-session (multipart/form-data)
+      - Fields: sessionId (text)
+      - Response: { message: string }
     - GET /health
       - Response: { status: "ok" }
   - Optional WebSocket:
@@ -135,11 +140,14 @@ This project is a full-stack multimodal AI chatbot that supports:
   - Returns: { sessionId: string, columns: string[], headPreview: any[][] }
 - POST /analyze
   - Body: { sessionId: string, question: string }
-  - Returns: { reply: string, artifacts?: any }
+  - Returns: { reply: string, artifact?: any }
 - GET /start-new-chat
   - Returns: { sessionId: string }
 - GET /all-sessions
-  - Returns: { sessions: string[] }
+  - Returns: { sessionIds: string[], titles: string[] }
+- POST /delete-session
+  - multipart/form-data: sessionId (string)
+  - Returns: { message: string }
 - GET /health
   - Returns: { status: "ok" }
 
@@ -175,7 +183,8 @@ This project is a full-stack multimodal AI chatbot that supports:
 
 - Vision endpoint form field renamed: prompt -> message
 - Analyze response field renamed: answer -> reply
-- New endpoints added: /start-new-chat, /all-sessions
+- New endpoints added: /start-new-chat, /all-sessions, /delete-session
+- /all-sessions response shape changed to { sessionIds, titles }
 - Pydantic upgraded to v2 (schema / validation differences vs v1)
 
 ## Getting Started (Development)
@@ -215,6 +224,7 @@ The project includes an e2b sandbox utility (`services/e2b_utils.py`) for execut
   - Text chat
   - Vision chat with an image
   - CSV upload, preview, ask analysis question
+  - Delete a previous chat session from sidebar
 
 ### Production Deployment
 
@@ -245,25 +255,39 @@ The project includes an e2b sandbox utility (`services/e2b_utils.py`) for execut
 - Add auth if multi-tenant/public
 - Log minimally; redact sensitive data
 
-## Roadmap
+## Recent Frontend Enhancements
 
-- v0.1 (MVP)
-  - REST endpoints, basic React UI
-  - OpenAI (or chosen) text and vision models
-  - CSV upload + basic analysis (describe, summary stats, simple charts returned as data URIs)
-- v0.2
-  - Streaming responses via WebSocket (using litellm streaming)
-  - Session persistence with Redis (replace in-memory store)
-  - Improved error messages and retries
-- v0.3
-  - Auth (JWT)
-  - Object storage for uploads
-  - Role-based rate limiting
-- v0.4
-  - Multi-file datasets, join/merge support
-  - Basic plotting with matplotlib/altair (exported images)
-  - Prompt templates for analysis tasks
-- v1.0
-  - Tests coverage >80%
-  - CI/CD pipelines
-  - Production hardening, observability
+- Lazy loading & idle decoding for large base64 vision images.
+- Unified sidebar with cached session list and per-session delete action.
+- Data analysis history reconstruction: JSON strings containing `{explanation, code, plot}` parsed into explanation + code (plot ignored for history until backend persists image data URIs).
+- Vision multimodal history parsing for list-of-parts structure.
+- Robust code + math rendering with graceful fallback for unknown languages.
+
+## Session Deletion Flow
+
+1. User opens sidebar (or hovers a session row on desktop).
+2. Delete icon appears; confirmation prompt guards accidental removal.
+3. POST /delete-session executed (FormData: sessionId).
+4. UI optimistically removes session; if active session deleted, a fresh session is started.
+
+## Analysis History Parsing
+
+Restored messages matching the serialized object shape:
+
+```json
+{ "explanation": "...", "code": "...", "plot": "plot_created" }
+```
+
+are rendered with:
+
+- Explanation (natural language)
+- Code block (Python)
+
+The `plot` placeholder is ignored for history until actual plot data URIs are stored.
+
+## Future Improvements
+
+- Persist and display generated plots in history (data URIs) with lazy loading.
+- Automatic session title generation from first user prompt or analysis summary.
+- Bulk delete & undo (soft delete grace window).
+- Streaming token updates for long responses.

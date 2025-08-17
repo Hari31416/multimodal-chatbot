@@ -39,7 +39,7 @@ help:
 	@echo "  ports                      Show processes listening on dev ports ($(BACKEND_PORT), $(FRONTEND_PORT))"
 	@echo "  kill-ports                 Force kill any processes on dev ports (use if stale)"
 	@echo "  test                       Run backend tests (alias)"
-	@echo "  clean                      Clean backend venv & frontend artifacts"
+	@echo "  clean                      Clean backend venv & frontend artifact"
 	@echo "  all                        Install both backend & frontend"
 
 # ---------------- Backend ----------------

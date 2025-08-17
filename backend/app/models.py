@@ -80,3 +80,7 @@ class SessionInfo(BaseModel):
     created_at: float
     last_accessed: float
     title: Optional[str] = "Working Session"
+
+
+class DeleteSessionResponse(BaseModel):
+    message: str = "Session deleted successfully"

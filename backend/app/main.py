@@ -72,7 +72,8 @@ async def all_previous_chats(sessionId: str = Form(...)):
 @app.post("/delete-session", response_model=models.DeleteSessionResponse)
 async def delete_session(sessionId: str = Form(...)):
     if not session_storage.delete_session(sessionId):
-        raise HTTPException(status_code=404, detail="Session not found or expired")
+        print(f"Session {sessionId} not found or already deleted")
+        return {"message": "Session not found or already deleted"}
     return {"message": "Session deleted successfully"}
 
 

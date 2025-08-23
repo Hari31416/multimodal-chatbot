@@ -15,19 +15,32 @@ app = FastAPI(title="Multimodal Chatbot", version="0.2.0")
 session_storage = redis_storage.session_storage
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# Basic CORS (adjust via env/config in real usage)
+
+from routes import sessions, artifacts
+from model.response_models import HealthResponse
+
+
+load_dotenv()
+
+
+app = FastAPI(title="Multimodal Chatbot", version="0.2.0")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# app.include_router(root.router)
+app.include_router(sessions.router)
+app.include_router(artifacts.router)
 
-@app.get("/health", response_model=models.HealthResponse)
+
+@app.get("/health", response_model=HealthResponse)
 async def health():
-    return {"status": "ok"}
+    return HealthResponse(status="ok")
 
 
 @app.get("/start-new-chat", response_model=models.StartNewChatResponse)

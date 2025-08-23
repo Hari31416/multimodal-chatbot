@@ -13,7 +13,6 @@ from .local_python_interpreter import (
     BASE_BUILTIN_MODULES,
     DEFAULT_MAX_LEN_OUTPUT,
     InterpreterError,
-    CodeOutput,
     find_spec,
 )
 

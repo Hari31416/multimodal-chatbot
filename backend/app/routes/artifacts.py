@@ -1,14 +1,14 @@
 from fastapi import APIRouter
 
-from backend.app.model.response_models import GetArtifactResponse
-from backend.app.utils import create_simple_logger
+from app.models.response_models import GetArtifactResponse
+from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
 
-router = APIRouter(prefix="/sessions", tags=["sessions"])
+router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
 
-@router.get("/artifacts/{session_id}/{artifact_id}", response_model=GetArtifactResponse)
+@router.get("/{session_id}/{artifact_id}", response_model=GetArtifactResponse)
 async def get_artifact(session_id: str, artifact_id: str):
     """Get an artifact by session ID and artifact ID."""
     logger.info(f"Fetching artifact {artifact_id} for session {session_id}")

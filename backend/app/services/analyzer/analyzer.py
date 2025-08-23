@@ -8,8 +8,9 @@ from typing import Dict, Any
 
 from .python_iterpreters import LocalPythonExecutor
 from .plotting_utils import mpl_fig_to_data_uri
-from ..utils import create_simple_logger, set_publish_matplotlib_template
-from ..models import AnalysisResponseModalChatbot, AnalyzeResponse
+from app.utils import create_simple_logger, set_publish_matplotlib_template
+
+from app.models.models import AnalysisResponseModalChatbot, AnalyzeResponse
 
 
 load_dotenv()

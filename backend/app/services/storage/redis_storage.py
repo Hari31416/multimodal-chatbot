@@ -10,7 +10,7 @@ from typing import Optional, Dict, Union, List
 from dotenv import load_dotenv
 import os
 
-from ..utils import create_simple_logger
+from app.utils import create_simple_logger
 
 load_dotenv()
 logger = create_simple_logger(__name__)

@@ -4,12 +4,11 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 
-from .redis_storage import session_storage
-from .files import convert_bytes_to_base64
-from ..prompts import Prompts
-from ..analyzer import handle_llm_response
-from ..models import AnalysisResponseModalChatbot, AnalyzeResponse
-from ..utils import create_simple_logger
+from .storage import session_storage
+from app.utils import convert_bytes_to_base64, create_simple_logger
+from app.prompts import Prompts
+from app.services.analyzer import handle_llm_response
+from app.models.models import AnalysisResponseModalChatbot, AnalyzeResponse
 
 load_dotenv()
 

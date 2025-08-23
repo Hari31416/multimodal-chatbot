@@ -3,21 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from . import models
-from .services import redis_storage, llm, files
-from .endpoint_utils import start_new_session, get_session_info, get_all_sessions_info
-import io
+from app.models import models
+from app.services import storage, llm
 
 
 load_dotenv()
 
 app = FastAPI(title="Multimodal Chatbot", version="0.2.0")
-session_storage = redis_storage.session_storage
+session_storage = storage.session_storage
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
-from routes import sessions, artifacts
-from model.response_models import HealthResponse
+from app.routes import sessions, artifacts, uploads
+from app.models.response_models import HealthResponse
 
 
 load_dotenv()
@@ -36,27 +34,12 @@ app.add_middleware(
 # app.include_router(root.router)
 app.include_router(sessions.router)
 app.include_router(artifacts.router)
+app.include_router(uploads.router)
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(status="ok")
-
-
-@app.get("/start-new-chat", response_model=models.StartNewChatResponse)
-async def start_new_chat():
-    session_id = start_new_session()
-    return {"sessionId": session_id}
-
-
-@app.post("/session-info", response_model=models.SessionInfo)
-async def session_info(sessionId: str):
-    return get_session_info(sessionId)
-
-
-@app.get("/all-sessions", response_model=models.AllSessionsResponse)
-async def all_sessions():
-    return get_all_sessions_info()
 
 
 @app.post("/chat", response_model=models.ChatResponse)
@@ -104,26 +87,6 @@ async def vision_chat(
         message=message, image_bytes=image_bytes, session_id=sessionId
     )
     return {"reply": reply}
-
-
-@app.post("/upload-csv", response_model=models.UploadCSVResponse)
-async def upload_csv(file: UploadFile = File(...)):
-    if file.content_type not in (
-        "text/csv",
-        "application/vnd.ms-excel",
-        "application/octet-stream",
-    ):
-        raise HTTPException(status_code=400, detail="File must be a CSV")
-    raw_bytes = await file.read()
-    df = files.load_csv(io.BytesIO(raw_bytes))
-    session_id = start_new_session()
-    session_storage.put_dataframe(session_id, df)
-    head_preview = df.head(5).values.tolist()
-    return models.UploadCSVResponse(
-        sessionId=session_id,
-        columns=list(df.columns),
-        headPreview=head_preview,
-    )
 
 
 @app.post("/analyze", response_model=models.AnalyzeResponse)

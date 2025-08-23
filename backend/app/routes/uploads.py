@@ -5,8 +5,8 @@ import io
 import pandas as pd
 from PIL import Image
 
-from ..model.response_models import CSVUploadResponse, ImageUploadResponse
-from ..utils import create_simple_logger
+from app.models.response_models import CSVUploadResponse, ImageUploadResponse
+from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
 

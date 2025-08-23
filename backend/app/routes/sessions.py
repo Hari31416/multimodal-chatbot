@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from backend.app.model.response_models import (
+from app.models.response_models import (
     CreateNewSessionResponse,
     SessionInfoResponse,
     AllSessionInfoResponse,
@@ -8,21 +8,21 @@ from backend.app.model.response_models import (
     MessageResponse,
     SessionResponse,
 )
-from backend.app.utils import create_simple_logger
+from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
-@router.get("sessions/new", response_model=CreateNewSessionResponse)
+@router.get("/new", response_model=CreateNewSessionResponse)
 async def start_new_session():
     """Start a new chat session."""
     logger.info("Starting a new chat session")
     return CreateNewSessionResponse()
 
 
-@router.get("/sessions/info/{session_id}", response_model=SessionInfoResponse)
+@router.get("/info/{session_id}", response_model=SessionInfoResponse)
 async def get_session_info(session_id: str):
     """Get information about a specific chat session."""
     logger.info(f"Fetching info for session: {session_id}")
@@ -37,7 +37,7 @@ async def get_session_info(session_id: str):
     )
 
 
-@router.get("/sessions/list", response_model=AllSessionInfoResponse)
+@router.get("/list", response_model=AllSessionInfoResponse)
 async def list_all_sessions():
     """List all chat sessions."""
     logger.info("Listing all chat sessions")
@@ -63,7 +63,7 @@ async def list_all_sessions():
     )
 
 
-@router.delete("/sessions/delete/{session_id}", response_model=DeleteSessionResponse)
+@router.delete("/delete/{session_id}", response_model=DeleteSessionResponse)
 async def delete_session(session_id: str):
     """Delete a specific chat session."""
     logger.info(f"Deleting session: {session_id}")
@@ -72,7 +72,7 @@ async def delete_session(session_id: str):
     return DeleteSessionResponse(message=f"Session {session_id} deleted successfully.")
 
 
-@router.get("/sessions/{session_id}/{message_id}", response_model=MessageResponse)
+@router.get("/{session_id}/{message_id}", response_model=MessageResponse)
 async def get_message(session_id: str, message_id: str):
     """Get a specific message from a chat session."""
     logger.info(f"Fetching message {message_id} from session {session_id}")
@@ -88,7 +88,7 @@ async def get_message(session_id: str, message_id: str):
     )
 
 
-@router.get("/sessions/{session_id}", response_model=SessionResponse)
+@router.get("/{session_id}", response_model=SessionResponse)
 async def get_session(session_id: str):
     """Get a complete chat session with all messages."""
     logger.info(f"Fetching complete session: {session_id}")

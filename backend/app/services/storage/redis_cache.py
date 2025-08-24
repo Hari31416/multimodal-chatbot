@@ -34,6 +34,8 @@ All_Objects = Union[Artifact, Message, Session, SessionInfo]
 
 
 def _build_redis_client() -> redis.Redis:
+    host = os.environ.get("REDIS_HOST", "localhost")
+    logger.info(f"Connecting to Redis at {host}")
     return redis.Redis(
         host=os.environ.get("REDIS_HOST", "localhost"),
         port=int(os.environ.get("REDIS_PORT", 6379)),
@@ -205,6 +207,7 @@ class RedisCache:
 
         if cascade and message.artifacts:
             for art in message.artifacts:
+                logger.debug(f"Cascade saving artifact {art.artifactId}")
                 self.save_artifact(art, ttl=ttl)
                 self._add_artifact_to_message_index(
                     message.messageId, art.artifactId, ttl=ttl

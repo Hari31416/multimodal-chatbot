@@ -11,6 +11,16 @@ from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
 
+__all__ = [
+    "decode_base64_to_bytes",
+    "encode_bytes_to_base64",
+    "DataFrameHandler",
+    "ImageHandler",
+    "compress_gzip",
+    "decompress_gzip",
+    "convert_to_raw_bytes",
+]
+
 
 def decode_base64_to_bytes(data: str) -> bytes:
     """Decode a base64 encoded string to bytes."""
@@ -222,7 +232,7 @@ class ImageHandler(FileHandlerBase):
         self,
         data: Union[str, bytes, Image.Image],
         encoding: Optional[str] = "base64",
-        compression: Optional[str] = "gzip",
+        compression: Optional[str] = None,
         image_format: str = "PNG",
         **kwargs,
     ):

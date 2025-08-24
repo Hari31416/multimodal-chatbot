@@ -7,9 +7,21 @@ from typing import Optional, Union
 from .redis_cache import redis_cache, RedisCache
 from .files_handler import DataFrameHandler, ImageHandler
 from app.utils import create_simple_logger
-from app.models.object_models import CSVArtifact, ImageArtifact, TextArtifact
+from app.models.object_models import (
+    CSVArtifact,
+    ImageArtifact,
+    TextArtifact,
+    CodeArtifact,
+)
 
 logger = create_simple_logger(__name__)
+
+__all__ = [
+    "push_csv_artifact_to_redis",
+    "push_image_artifact_to_redis",
+    "push_text_artifact_to_redis",
+    "push_code_artifact_to_redis",
+]
 
 
 def push_csv_artifact_to_redis(
@@ -110,6 +122,41 @@ def push_text_artifact_to_redis(
         type="text",
         description=description or f"Text Artifact for message {message_id}",
         length=len(text),
+    )
+
+    cache.save_artifact(artifact)
+    if message_id:
+        cache._add_artifact_to_message_index(
+            message_id=message_id, artifact_id=artifact.artifactId
+        )
+    return artifact
+
+
+def push_code_artifact_to_redis(
+    code: str,
+    cache: RedisCache = redis_cache,
+    message_id: Optional[str] = None,
+    description: Optional[str] = None,
+    language: Optional[str] = None,
+) -> CodeArtifact:
+    """Process and store a Code artifact in Redis.
+
+    Args:
+        code (str): The code to be processed and stored.
+        cache (RedisCache): The Redis cache instance for storage.
+        message_id (Optional[str]): The ID of the message to associate the artifact with.
+        description (Optional[str]): Optional description for the artifact.
+        language (Optional[str]): Programming language of the code.
+
+    Returns:
+        CodeArtifact: The updated Code artifact with the URL set if applicable.
+    """
+    artifact = CodeArtifact(
+        data=code,
+        type="code",
+        description=description or f"Code Artifact for message {message_id}",
+        length=len(code),
+        language=language,
     )
 
     cache.save_artifact(artifact)

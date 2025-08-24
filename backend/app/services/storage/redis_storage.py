@@ -22,7 +22,6 @@ redis_client = redis.Redis(
     password=os.environ.get("REDIS_PASSWORD"),
     socket_connect_timeout=5,
     socket_timeout=5,
-    retry_on_timeout=True,
 )
 
 
@@ -48,7 +47,6 @@ class RedisSessionStorage:
                 password=os.environ.get("REDIS_PASSWORD"),
                 socket_connect_timeout=5,
                 socket_timeout=5,
-                retry_on_timeout=True,
             )
         else:
             self.redis = redis_client

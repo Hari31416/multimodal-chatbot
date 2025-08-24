@@ -95,7 +95,7 @@ def compress_data(data: bytes, compression: Optional[str]) -> bytes:
         raise ValueError(f"Unsupported compression: {compression}")
 
 
-class SpecialFilesHandlerBase:
+class FileHandlerBase:
     """Base class for handling special files like CSV, Parquet, and Images."""
 
     def __init__(
@@ -149,7 +149,7 @@ def convert_df_to_parquet_bytes(df: pd.DataFrame, **kwargs) -> bytes:
         raise
 
 
-class DataFrameHandler(SpecialFilesHandlerBase):
+class DataFrameHandler(FileHandlerBase):
     """Handler for pandas DataFrame files."""
 
     def __init__(
@@ -201,7 +201,8 @@ class DataFrameHandler(SpecialFilesHandlerBase):
     def get_base64_representation(self) -> str:
         """Get the base64 representation of the DataFrame."""
         raw_bytes = self._convert_to_bytes()
-        return encode_bytes_to_base64(raw_bytes)
+        compressed_bytes = compress_data(raw_bytes, self.compression)
+        return encode_bytes_to_base64(compressed_bytes)
 
     def get_raw_bytes(self) -> bytes:
         """Get the raw bytes of the DataFrame."""
@@ -214,7 +215,7 @@ class DataFrameHandler(SpecialFilesHandlerBase):
         return self.df._repr_html_()
 
 
-class ImageHandler(SpecialFilesHandlerBase):
+class ImageHandler(FileHandlerBase):
     """Handler for image files."""
 
     def __init__(
@@ -261,6 +262,25 @@ class ImageHandler(SpecialFilesHandlerBase):
         raw_bytes = buffer.getvalue()
         raw_bytes = compress_data(raw_bytes, self.compression)
         return raw_bytes
+
+    def get_thumbnail_bytes(self, size=(128, 128)) -> bytes:
+        """Get the raw bytes of the thumbnail image."""
+        thumbnail = self.image.copy()
+        thumbnail.thumbnail(size)
+        buffer = io.BytesIO()
+        thumbnail.save(buffer, format=self.image_format)
+        raw_bytes = buffer.getvalue()
+        raw_bytes = compress_data(raw_bytes, self.compression)
+        return raw_bytes
+
+    def get_thumbnail_base64(self, size=(128, 128)) -> str:
+        """Get the base64 representation of the thumbnail image."""
+        thumbnail = self.image.copy()
+        thumbnail.thumbnail(size)
+        buffer = io.BytesIO()
+        thumbnail.save(buffer, format=self.image_format)
+        raw_bytes = buffer.getvalue()
+        return encode_bytes_to_base64(raw_bytes)
 
     def _repr_html_(self):
         """HTML representation for Jupyter Notebooks."""

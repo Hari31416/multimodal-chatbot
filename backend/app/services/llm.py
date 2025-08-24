@@ -4,7 +4,46 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 
-from .storage import session_storage
+from .storage.redis_cache import redis_cache
+from app.models.object_models import Message
+
+
+# TODO: Legacy session_storage adapter - temporary compatibility layer
+class LegacySessionStorageAdapter:
+    """Temporary adapter to make existing LLM code work with Redis."""
+
+    def __init__(self):
+        self.cache = redis_cache
+
+    def get_messages(self, session_id: str):
+        """Get messages in legacy format."""
+        try:
+            # Use default user for legacy compatibility
+            message_ids = self.cache.get_message_ids_for_session(session_id)
+            if not message_ids:
+                return []
+
+            messages = []
+            for msg_id in message_ids:
+                msg = self.cache.get_message(msg_id)
+                if msg:
+                    messages.append({"role": msg.role, "content": msg.content})
+            return messages
+        except:
+            return []
+
+    def put_session_id(self, session_id: str):
+        """Legacy compatibility - session creation is handled elsewhere."""
+        pass
+
+    def push_messages(self, session_id: str, message_dict: dict):
+        """Legacy compatibility - message creation is handled elsewhere."""
+        # In the new system, messages are created by MessageService
+        # This is called after the fact, so we can ignore it
+        pass
+
+
+session_storage = LegacySessionStorageAdapter()
 from app.utils import convert_bytes_to_base64, create_simple_logger
 from app.prompts import Prompts
 from app.services.analyzer import handle_llm_response

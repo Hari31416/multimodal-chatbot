@@ -62,14 +62,17 @@ class AnalyzeResponse(BaseModel):
     code: Optional[str]
     artifact: Optional[str]
     artifact_is_mime_type: bool
+    code_execution_failed: Optional[bool] = False
 
 
 class AnalysisResponseModalChatbot(BaseModel):
     explanation: str = Field(
         ..., description="2-4 sentence description of your analysis approach"
     )
-    code: str = Field(..., description="Python code that performs the analysis")
-    plot: str = Field(
+    code: Optional[str] = Field(
+        ..., description="Python code that performs the analysis"
+    )
+    plot: Optional[str] = Field(
         ...,
         description="Either 'plot_created' if visualization made, or 'no_plot' if not",
     )

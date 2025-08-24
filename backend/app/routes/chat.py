@@ -39,7 +39,7 @@ async def send_message(
     """
     try:
         # Step 1-4: Create user message
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=session_id, user_id=user_id, content=message
         )
 
@@ -56,7 +56,7 @@ async def send_message(
             raise HTTPException(status_code=500, detail="Failed to generate response")
 
         # Step 6-7: Create assistant message
-        assistant_message = await message_service.create_assistant_message(
+        assistant_message = await message_service.push_assistant_message(
             session_id=session_id,
             user_id=user_id,
             content=llm_response,
@@ -97,7 +97,7 @@ async def send_message_with_vision(
     """
     try:
         # Create user message (artifacts for images handled separately)
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=session_id, user_id=user_id, content=message
         )
 
@@ -123,7 +123,7 @@ async def send_message_with_vision(
             raise HTTPException(status_code=500, detail="Failed to generate response")
 
         # Create assistant message
-        assistant_message = await message_service.create_assistant_message(
+        assistant_message = await message_service.push_assistant_message(
             session_id=session_id,
             user_id=user_id,
             content=llm_response,
@@ -160,7 +160,7 @@ async def analyze_data(
     """
     try:
         # Create user message
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=session_id, user_id=user_id, content=message
         )
 
@@ -179,7 +179,7 @@ async def analyze_data(
             raise HTTPException(status_code=500, detail="Failed to generate analysis")
 
         # Create assistant message
-        assistant_message = await message_service.create_assistant_message(
+        assistant_message = await message_service.push_assistant_message(
             session_id=session_id,
             user_id=user_id,
             content=llm_response,

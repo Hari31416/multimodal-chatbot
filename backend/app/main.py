@@ -61,7 +61,7 @@ async def chat_legacy(body: models.ChatRequest):
 
     try:
         # Create user message
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=body.sessionId, user_id=user_id, content=body.message
         )
 
@@ -72,7 +72,7 @@ async def chat_legacy(body: models.ChatRequest):
         reply = await llm.text_completion(body.message, session_id=body.sessionId)
 
         # Create assistant message
-        await message_service.create_assistant_message(
+        await message_service.push_assistant_message(
             session_id=body.sessionId, user_id=user_id, content=reply
         )
 
@@ -158,7 +158,7 @@ async def vision_chat_legacy(
 
     try:
         # Create user message
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=sessionId, user_id=user_id, content=message
         )
 
@@ -172,7 +172,7 @@ async def vision_chat_legacy(
         )
 
         # Create assistant message
-        await message_service.create_assistant_message(
+        await message_service.push_assistant_message(
             session_id=sessionId, user_id=user_id, content=reply
         )
 
@@ -194,7 +194,7 @@ async def analyze_legacy(body: models.AnalyzeRequest):
 
     try:
         # Create user message
-        user_message = await message_service.create_user_message(
+        user_message = await message_service.push_user_message(
             session_id=body.sessionId, user_id=user_id, content=body.message
         )
 

@@ -27,6 +27,12 @@ async def upload_csv(
     userId: Optional[str] = Form(
         None, description="Optional user ID associated with the session"
     ),
+    messageId: Optional[str] = Form(
+        None, description="Optional message ID to associate the artifact with"
+    ),
+    description: Optional[str] = Form(
+        None, description="Optional description for the CSV file"
+    ),
     delimiter: Optional[str] = Form(
         ",", description="Delimiter used in the CSV file, default is ','"
     ),
@@ -75,6 +81,9 @@ async def upload_image(
     sessionId: str = Form(..., description="Session ID"),
     userId: Optional[str] = Form(
         None, description="Optional user ID associated with the session"
+    ),
+    messageId: Optional[str] = Form(
+        None, description="Optional message ID to associate the artifact with"
     ),
     caption: Optional[str] = Form(
         None, description="Optional caption or description for the image"

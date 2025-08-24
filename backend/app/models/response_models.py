@@ -50,6 +50,9 @@ class CreateNewSessionResponse(BaseModel):
         default_factory=different_ids_factory["session"],
         description="Newly created session ID",
     )
+    userId: str = Field(
+        description="User ID associated with the new session",
+    )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="Response timestamp in UTC"
     )

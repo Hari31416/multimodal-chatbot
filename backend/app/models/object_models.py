@@ -34,7 +34,7 @@ class BaseArtifact(BaseModel):
     type: Literal["chart", "table", "image", "csv", "code"] = Field(
         ..., description="Type of the artifact"
     )
-    data: str = Field(..., description="Data representing the artifact")
+    data: Union[str, bytes] = Field(..., description="Data representing the artifact")
     url: Optional[str] = Field(
         None, description="URL of the uploaded artifact if applicable"
     )
@@ -59,7 +59,6 @@ class ImageArtifact(BaseArtifact):
 
 class CSVArtifact(BaseArtifact):
     type: Literal["csv"] = Field("csv", description="Type of the artifact")
-    data: str = Field(..., description="base64 encoded CSV data")
     num_rows: Optional[int] = Field(None, description="Number of rows in the CSV")
     num_columns: Optional[int] = Field(None, description="Number of columns in the CSV")
 

@@ -9,7 +9,7 @@ from app.models.response_models import (
     SessionResponse,
 )
 from app.models.object_models import Session, Message, SessionInfo
-from app.services.session_assembler import session_assembler
+from app.services.chat.session_service import session_service
 from app.services.storage.redis_cache import redis_cache
 from app.utils import create_simple_logger
 
@@ -44,7 +44,7 @@ async def get_session_info(session_id: str, user_id: str):
     logger.info(f"Fetching info for session: {session_id}")
 
     try:
-        session_info = await session_assembler.get_session_summary(session_id, user_id)
+        session_info = await session_service.get_session_summary(session_id, user_id)
 
         if session_info is None:
             raise HTTPException(
@@ -75,7 +75,7 @@ async def list_all_sessions(user_id: str):
     logger.info(f"Listing all chat sessions for user: {user_id}")
 
     try:
-        sessions = await session_assembler.get_all_user_sessions(user_id)
+        sessions = await session_service.get_all_user_sessions(user_id)
 
         session_responses = [
             SessionInfoResponse(
@@ -182,7 +182,7 @@ async def get_session(session_id: str, user_id: str):
 
     try:
         # Use the optimized session assembler
-        complete_session = await session_assembler.get_complete_session(
+        complete_session = await session_service.get_complete_session(
             session_id, user_id
         )
 

@@ -26,43 +26,6 @@ from app.services.chat.chat_utils import (
 from app.services.storage import redis_cache, ImageHandler, DataFrameHandler
 
 
-# TODO: Legacy session_storage adapter - temporary compatibility layer
-class LegacySessionStorageAdapter:
-    """Temporary adapter to make existing LLM code work with Redis."""
-
-    def __init__(self):
-        self.cache = redis_cache
-
-    def get_messages(self, session_id: str):
-        """Get messages in legacy format."""
-        try:
-            # Use default user for legacy compatibility
-            message_ids = self.cache.get_message_ids_for_session(session_id)
-            if not message_ids:
-                return []
-
-            messages = []
-            for msg_id in message_ids:
-                msg = self.cache.get_message(msg_id)
-                if msg:
-                    messages.append({"role": msg.role, "content": msg.content})
-            return messages
-        except:
-            return []
-
-    def put_session_id(self, session_id: str):
-        """Legacy compatibility - session creation is handled elsewhere."""
-        pass
-
-    def push_messages(self, session_id: str, message_dict: dict):
-        """Legacy compatibility - message creation is handled elsewhere."""
-        # In the new system, messages are created by MessageService
-        # This is called after the fact, so we can ignore it
-        pass
-
-
-session_storage = LegacySessionStorageAdapter()
-
 load_dotenv()
 
 model = os.getenv("LLM_MODEL", "gemini/gemini-2.0-flash")
@@ -276,18 +239,16 @@ async def analyze_data(
     session_id: str = None,
     user_id: str = None,
     try_number: int = 0,
-) -> AnalyzeResponse:
+) -> Message:
     """
     Analyze the DataFrame based on the provided message.
     """
     if try_number == 3:
         logger.error(f"Maximum retry attempts reached for session {session_id}.")
-        return AnalyzeResponse(
-            reply="Error during calling the LLM for data analysis. Please try again later.",
-            code="",
-            artifact="",
-            artifact_is_mime_type=False,
-            code_execution_failed=True,
+        return Message(
+            sessionId=session_id,
+            role="assistant",
+            content="Error during calling the LLM for data analysis after multiple attempts. Please try again later.",
         )
     system_prompt = Prompts.format_system_prompt_for_analyzer(df)
     current_message = Message(
@@ -339,11 +300,10 @@ async def analyze_data(
         )
     except Exception as e:
         logger.error(f"Error during calling the LLM for data analysis: {e}")
-        return AnalyzeResponse(
-            reply="Error during calling the LLM for data analysis. Please try again.",
-            code="",
-            artifact="",
-            artifact_is_mime_type=False,
+        return Message(
+            sessionId=session_id,
+            role="assistant",
+            content="Error during calling the LLM for data analysis. Please try again later.",
         )
 
     result = await handle_llm_response(
@@ -363,7 +323,11 @@ async def analyze_data(
 
     if not result.code:
         logger.info(f"No code executed. Nothing extra to push.")
-        return result
+        return Message(
+            sessionId=session_id,
+            role="assistant",
+            content=result.reply,
+        )
 
     result_message = Message(
         sessionId=session_id,
@@ -409,4 +373,5 @@ async def analyze_data(
         artifacts=[artifacts],
         push_artifacts_in_message=True,
     )
-    return result
+    result_message.artifacts = artifacts
+    return result_message

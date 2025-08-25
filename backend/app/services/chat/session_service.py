@@ -8,10 +8,12 @@ to minimize Redis round-trips when fetching complete session data.
 from typing import Dict, List, Optional, Set
 import json
 from pydantic import TypeAdapter
+import pandas as pd
 
 from app.models.object_models import Session, Message, Artifact, SessionInfo
 from app.models.response_models import SessionResponse
 from app.services.storage.redis_cache import RedisCache, redis_cache
+from app.services.storage.storage import DataFrameHandler
 from app.utils import create_simple_logger
 
 
@@ -342,6 +344,68 @@ class SessionService:
         except Exception as e:
             logger.error(f"Error getting sessions for user {user_id}: {str(e)}")
             return []
+
+    async def get_df_from_session(
+        self, session_id: str, user_id: str
+    ) -> Optional[pd.DataFrame]:
+        """
+        Retrieve the DataFrame associated with the latest message in a session.
+
+        Args:
+            session_id: The session ID to fetch the DataFrame from
+            user_id: The user ID for ownership validation
+
+        Returns:
+            The DataFrame if found, else None
+        """
+        try:
+            session_metadata = self.cache.get_session(session_id, user_id=user_id)
+            if session_metadata is None:
+                logger.warning(
+                    f"Session {session_id} not found or access denied for user {user_id}"
+                )
+                return None
+            # Get all message IDs for the session
+            message_ids = self.cache.get_message_ids_for_session(
+                session_id, user_id=user_id
+            )
+            if not message_ids:
+                logger.info(f"No messages found for session {session_id}")
+                return None
+
+            artifact_ids = [
+                self.cache.get_artifact_ids_for_message(msg_id)
+                for msg_id in message_ids
+            ]
+            artifact_ids = [ids for ids in artifact_ids if ids]
+            artifact_ids = [id for sublist in artifact_ids for id in sublist]
+
+            if not artifact_ids:
+                logger.info(f"No artifacts found in session {session_id}")
+                return None
+
+            all_artifacts = self._batch_fetch_artifacts(artifact_ids)
+            if not all_artifacts:
+                logger.info(f"No artifacts found in session {session_id}")
+                return None
+
+            df_artifacts = [
+                art for art in all_artifacts if art and art["type"] == "csv"
+            ]
+            if not df_artifacts:
+                logger.info(f"No CSV artifacts found in session {session_id}")
+                return None
+
+            # Assume the latest CSV artifact is the relevant DataFrame
+            latest_artifact = df_artifacts[-1]
+            df_handler = DataFrameHandler(latest_artifact["data"])
+            return df_handler.get_python_friendly_format()
+
+        except Exception as e:
+            logger.error(
+                f"Error retrieving DataFrame from session {session_id}: {str(e)}"
+            )
+            return None
 
 
 # Default instance for convenience

@@ -233,7 +233,7 @@ class ImageHandler(FileHandlerBase):
         data: Union[str, bytes, Image.Image],
         encoding: Optional[str] = "base64",
         compression: Optional[str] = None,
-        image_format: str = "PNG",
+        image_format: str = "png",
         **kwargs,
     ):
         super().__init__(data, encoding, compression, **kwargs)

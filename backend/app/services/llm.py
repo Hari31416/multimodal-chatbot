@@ -17,7 +17,12 @@ from app.utils import convert_bytes_to_base64, create_simple_logger
 from app.prompts import Prompts
 from app.services.analyzer import handle_llm_response
 from app.models.models import AnalysisResponseModalChatbot, AnalyzeResponse
-from app.services.chat.chat_utils import get_messages, push_messages
+from app.services.chat.chat_utils import (
+    get_messages,
+    push_messages,
+    create_image_artifact,
+    create_csv_artifact,
+)
 from app.services.storage import redis_cache, ImageHandler, DataFrameHandler
 
 
@@ -232,11 +237,8 @@ async def vision_completion(
         role="user",
         content=message,
     )
-    image: ImageHandler = ImageHandler(data=image, compression=None)
-    image_base64 = image.get_base64_representation()
-    image_artifact = ImageArtifact(
-        type="image",
-        data=image_base64,
+    image_artifact = create_image_artifact(
+        image,
         description=f"Image artifact for message in session {session_id} messageid {current_message.messageId}",
     )
     messages = await _handle_messages_push(
@@ -295,12 +297,9 @@ async def analyze_data(
     )
 
     if try_number == 0:
-        df_artifact = CSVArtifact(
-            type="csv",
-            data=DataFrameHandler(data=df).get_base64_representation(),
-            description=f"CSV Artifact for message in session {session_id} messageid {current_message.messageId}",
-            num_rows=len(df),
-            num_columns=len(df.columns),
+        df_artifact = create_csv_artifact(
+            df,
+            description=f"CSV artifact for message in session {session_id} messageid {current_message.messageId}",
         )
         messages = await _handle_messages_push(
             session_id=session_id,
@@ -325,7 +324,6 @@ async def analyze_data(
             messages,
             session_id=session_id,
             response_format=AnalysisResponseModalChatbot,
-            temperature=0.5,
         )
         response_message = Message(
             sessionId=session_id,
@@ -363,35 +361,32 @@ async def analyze_data(
             try_number=try_number + 1,
         )
 
+    if not result.code:
+        logger.info(f"No code executed. Nothing extra to push.")
+        return result
+
     result_message = Message(
         sessionId=session_id,
         role="user",
-        content=result.reply,
+        content="After running the code, here is the result. Use this for any follow-up questions if needed.",
     )
     artifacts = []
-    if result.code:
-        logger.info(f"Code generated. Creating code artifact.")
-        code_artifact = CodeArtifact(
-            type="code",
-            data=result.code,
-            description=f"Code artifact for message in session {session_id} messageid {current_message.messageId}",
-            language="python",
-        )
-        artifacts.append(code_artifact)
+    # if result.code:
+    #     logger.info(f"Code generated. Creating code artifact.")
+    #     code_artifact = CodeArtifact(
+    #         type="code",
+    #         data=result.code,
+    #         description=f"Code artifact for message in session {session_id} messageid {current_message.messageId}",
+    #         language="python",
+    #     )
+    #     artifacts.append(code_artifact)
 
     if result.artifact and result.artifact_is_mime_type:
         logger.info(f"Image generated. Creating image artifact.")
         base64_code = result.artifact.split("base64,")[-1]
-        image_handler = ImageHandler(data=base64_code)
-        pil_image = image_handler.get_python_friendly_format()
-        image_artifact = ImageArtifact(
-            type="image",
-            data=base64_code,
+        image_artifact = create_image_artifact(
+            base64_code,
             description=f"Image artifact for message in session {session_id} messageid {current_message.messageId}",
-            height=pil_image.height if pil_image else 0,
-            width=pil_image.width if pil_image else 0,
-            format=image_handler.image_format.lower() if pil_image else "png",
-            thumbnail_data=image_handler.get_thumbnail_base64((128, 128)),
         )
         artifacts.append(image_artifact)
 

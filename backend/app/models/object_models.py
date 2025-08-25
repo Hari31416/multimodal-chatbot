@@ -45,6 +45,9 @@ class BaseArtifact(BaseModel):
         default_factory=datetime.now, description="Response timestamp in UTC"
     )
 
+    def __repr__(self) -> str:
+        return f"<Artifact id={self.artifactId} type={self.type} description={self.description} data_length={len(self.data) if self.data else 0}>"
+
 
 class ImageArtifact(BaseArtifact):
     type: Literal["image"] = Field("image", description="Type of the artifact")
@@ -98,6 +101,9 @@ class Message(BaseModel):
         None, description="List of artifacts associated with the message"
     )
 
+    def __repr__(self) -> str:
+        return f"<Message id={self.messageId} role={self.role} content={self.content[:20]}...> artifacts={len(self.artifacts) if self.artifacts else 0}>"
+
 
 # all data required to reconstruct a session
 class Session(BaseModel):
@@ -123,6 +129,9 @@ class Session(BaseModel):
     )
     numMessages: int = Field(0, description="Number of messages in the session")
 
+    def __repr__(self) -> str:
+        return f"<Session id={self.sessionId} userId={self.userId} title={self.title} numMessages={len(self.messages)}>"
+
 
 # a brief session info without messages and artifacts
 class SessionInfo(BaseModel):
@@ -145,3 +154,6 @@ class SessionInfo(BaseModel):
     )
     numMessages: int = Field(0, description="Number of messages in the session")
     numArtifacts: int = Field(0, description="Number of artifacts in the session")
+
+    def __repr__(self) -> str:
+        return f"<SessionInfo id={self.sessionId} userId={self.userId} title={self.title} numMessages={self.numMessages} numArtifacts={self.numArtifacts}>"

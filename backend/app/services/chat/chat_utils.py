@@ -155,3 +155,56 @@ async def push_messages(
             artifacts=artifacts_,
             push_artifacts_in_message=push_artifacts_in_message,
         )
+
+
+def create_image_artifact(
+    image: Union[bytes, Image.Image, str], **kwargs
+) -> ImageArtifact:
+    """Create an ImageArtifact from various input types.
+
+    Args:
+        image (Union[bytes, Image.Image, str]): The image data as bytes, PIL Image, or file path.
+        **kwargs: Additional keyword arguments for the ImageArtifact.
+
+    Returns:
+        ImageArtifact: The created ImageArtifact object.
+    """
+    image_handler = ImageHandler(data=image)
+    pil_image = image_handler.get_python_friendly_format()
+    thubmnail = image_handler.get_thumbnail_base64()
+    base_64_str = image_handler.get_base64_representation()
+    image_artifact = ImageArtifact(
+        type="image",
+        data=base_64_str,
+        thumbnail_data=thubmnail,
+        height=pil_image.height,
+        width=pil_image.width,
+        format=pil_image.format,
+        **kwargs,
+    )
+    return image_artifact
+
+
+def create_csv_artifact(df: Union[pd.DataFrame, str, bytes], **kwargs) -> CSVArtifact:
+    """Create a CSVArtifact from a DataFrame or CSV data.
+
+    Args:
+        df (Union[pd.DataFrame, str, bytes]): The DataFrame or CSV data as string/bytes.
+        **kwargs: Additional keyword arguments for the CSVArtifact.
+
+    Returns:
+        CSVArtifact: The created CSVArtifact object.
+    """
+    df_handler = DataFrameHandler(data=df)
+    pandas_df = df_handler.get_python_friendly_format()
+    csv_data = df_handler.get_base64_representation()
+    num_rows, num_columns = pandas_df.shape
+
+    csv_artifact = CSVArtifact(
+        type="csv",
+        data=csv_data,
+        num_rows=num_rows,
+        num_columns=num_columns,
+        **kwargs,
+    )
+    return csv_artifact

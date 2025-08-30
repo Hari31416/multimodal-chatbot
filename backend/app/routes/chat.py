@@ -112,6 +112,7 @@ async def send_message(
     )
     logger.info(f"Total valid artifact IDs to attach: {len(artifact_ids_final)}")
     artifacts = await session_service._batch_fetch_artifacts(artifact_ids_final)
+    artifacts = [art for _, art in artifacts.items() if art is not None]
     unique_artifact_types = set(art.type for art in artifacts)
     logger.info(f"Unique artifact types to attach: {unique_artifact_types}")
 

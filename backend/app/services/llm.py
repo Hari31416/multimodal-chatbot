@@ -192,7 +192,10 @@ async def text_completion(message: str, session_id: str, user_id: str) -> Messag
 
 
 async def vision_completion(
-    message: str, image: Union[bytes, Image.Image], session_id: str, user_id: str
+    message: str,
+    image_artifacts: Union[ImageArtifact, List[ImageArtifact]],
+    session_id: str,
+    user_id: str,
 ) -> Message:
     system_prompt = Prompts.SIMPLE_CHAT_WITH_IMAGE
     current_message = Message(
@@ -200,16 +203,16 @@ async def vision_completion(
         role="user",
         content=message,
     )
-    image_artifact = create_image_artifact(
-        image,
-        description=f"Image artifact for message in session {session_id} messageid {current_message.messageId}",
-    )
     messages = await _handle_messages_push(
         session_id=session_id,
         user_id=user_id,
         current_message=current_message,
         system_prompt=system_prompt,
-        artifacts=[image_artifact],
+        artifacts=(
+            [image_artifacts]
+            if isinstance(image_artifacts, ImageArtifact)
+            else image_artifacts
+        ),
         include_artifacts=True,
     )
 
@@ -234,8 +237,9 @@ async def vision_completion(
 
 
 async def analyze_data(
-    df: pd.DataFrame,
     message: str,
+    df_artifact: CSVArtifact,
+    image_artifacts: Optional[Union[ImageArtifact, List[ImageArtifact]]] = None,
     session_id: str = None,
     user_id: str = None,
     try_number: int = 0,
@@ -250,6 +254,8 @@ async def analyze_data(
             role="assistant",
             content="Error during calling the LLM for data analysis after multiple attempts. Please try again later.",
         )
+    df_handler = DataFrameHandler(df_artifact.data)
+    df = df_handler.get_python_friendly_format()
     system_prompt = Prompts.format_system_prompt_for_analyzer(df)
     current_message = Message(
         sessionId=session_id,
@@ -258,16 +264,19 @@ async def analyze_data(
     )
 
     if try_number == 0:
-        df_artifact = create_csv_artifact(
-            df,
-            description=f"CSV artifact for message in session {session_id} messageid {current_message.messageId}",
-        )
+        artifacts = [df_artifact]
+        if image_artifacts:
+            if isinstance(image_artifacts, ImageArtifact):
+                artifacts.append(image_artifacts)
+            elif isinstance(image_artifacts, list):
+                artifacts.extend(image_artifacts)
+
         messages = await _handle_messages_push(
             session_id=session_id,
             user_id=user_id,
             current_message=current_message,
             system_prompt=system_prompt,
-            artifacts=[df_artifact],
+            artifacts=artifacts,
             include_artifacts=True,
         )
     else:

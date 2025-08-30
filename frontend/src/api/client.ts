@@ -23,3 +23,9 @@ export async function getJSON<T>(path: string): Promise<T> {
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
+
+export async function deleteJSON<T>(path: string): Promise<T> {
+  const r = await fetch(API_BASE_URL + path, { method: "DELETE" });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}

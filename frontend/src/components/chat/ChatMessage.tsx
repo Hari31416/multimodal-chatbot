@@ -18,9 +18,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const isUser = message.role === "user";
   const [showImage, setShowImage] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Get images to display - prefer imageUrls array, fallback to single imageUrl
+  const imagesToDisplay =
+    message.imageUrls && message.imageUrls.length > 0
+      ? message.imageUrls
+      : message.imageUrl
+      ? [message.imageUrl]
+      : [];
 
   const overlay =
-    showImage && message.imageUrl ? (
+    showImage && imagesToDisplay.length > 0 ? (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm"
         role="dialog"
@@ -50,8 +59,63 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               />
             </svg>
           </button>
+          {imagesToDisplay.length > 1 && (
+            <div className="absolute -top-10 left-0 text-slate-200 text-sm">
+              {selectedImageIndex + 1} / {imagesToDisplay.length}
+            </div>
+          )}
+          {imagesToDisplay.length > 1 && (
+            <>
+              <button
+                onClick={() =>
+                  setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))
+                }
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-200 hover:text-white p-2 disabled:opacity-50"
+                disabled={selectedImageIndex === 0}
+                aria-label="Previous image"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() =>
+                  setSelectedImageIndex(
+                    Math.min(imagesToDisplay.length - 1, selectedImageIndex + 1)
+                  )
+                }
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-200 hover:text-white p-2 disabled:opacity-50"
+                disabled={selectedImageIndex === imagesToDisplay.length - 1}
+                aria-label="Next image"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
           <img
-            src={message.imageUrl}
+            src={imagesToDisplay[selectedImageIndex]}
             alt="Full size"
             className="w-full h-auto max-h-[80vh] object-contain rounded-xl shadow-2xl"
           />
@@ -65,23 +129,36 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         <div className="flex justify-end">
           <div className="max-w-2xl space-y-2">
             <div className="flex flex-col items-end gap-3">
-              {message.imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setShowImage(true)}
-                  className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm w-64 h-64 bg-slate-50 dark:bg-slate-800 group relative focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  aria-label="View full image"
-                >
-                  <LazyDataImage
-                    dataUrl={message.imageUrl}
-                    alt="User upload"
-                    wrapperClassName="w-full h-full"
-                    className="object-cover w-full h-full transition-transform duration-200 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to enlarge
-                  </div>
-                </button>
+              {imagesToDisplay.length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-end">
+                  {imagesToDisplay.map((imageUrl, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setSelectedImageIndex(index);
+                        setShowImage(true);
+                      }}
+                      className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm w-32 h-32 bg-slate-50 dark:bg-slate-800 group relative focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      aria-label={`View image ${index + 1}`}
+                    >
+                      <LazyDataImage
+                        dataUrl={imageUrl}
+                        alt={`User upload ${index + 1}`}
+                        wrapperClassName="w-full h-full"
+                        className="object-cover w-full h-full transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        Click to enlarge
+                      </div>
+                      {imagesToDisplay.length > 1 && (
+                        <div className="absolute top-1 right-1 bg-slate-900/70 text-white text-xs px-1 py-0.5 rounded">
+                          {index + 1}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
               <div className="bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-lg">
                 <p className="text-sm whitespace-pre-wrap break-words">

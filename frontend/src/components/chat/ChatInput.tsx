@@ -1,12 +1,10 @@
-import React, { useRef, useMemo, useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import { AttachmentPicker } from "./AttachmentPicker";
 
 interface ChatInputProps {
   input: string;
   setInput: (input: string) => void;
   pending: boolean;
-  imageFile: File | null;
-  setImageFile: (file: File | null) => void;
   sessionId: string | null;
   pickerOpen: boolean;
   setPickerOpen: (open: boolean) => void;
@@ -14,14 +12,22 @@ interface ChatInputProps {
   error: string;
   fileInputImageRef: React.RefObject<HTMLInputElement>;
   fileInputCsvRef: React.RefObject<HTMLInputElement>;
+  onImageUpload: (files: File[]) => void;
+  hasUploadedImages?: boolean;
+  hasUploadedData?: boolean;
+  uploadedImageArtifacts?: Array<{
+    artifactId: string;
+    data: string;
+    fileName: string;
+    description: string;
+  }>;
+  onRemoveImageArtifact?: (artifactId: string) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   input,
   setInput,
   pending,
-  imageFile,
-  setImageFile,
   sessionId,
   pickerOpen,
   setPickerOpen,
@@ -29,26 +35,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   error,
   fileInputImageRef,
   fileInputCsvRef,
+  onImageUpload,
+  hasUploadedImages = false,
+  hasUploadedData = false,
+  uploadedImageArtifacts = [],
+  onRemoveImageArtifact,
 }) => {
   const attachmentButtonRef = useRef<HTMLButtonElement | null>(null);
   const [focused, setFocused] = useState(false);
-
-  // Stable preview URL for selected image; revoked on change/unmount
-  const previewUrl = useMemo(() => {
-    if (!imageFile) return null;
-    try {
-      return URL.createObjectURL(imageFile);
-    } catch (e) {
-      console.warn("Could not create object URL", e);
-      return null;
-    }
-  }, [imageFile]);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -63,14 +57,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     target.style.height = target.scrollHeight + "px";
   };
 
-  const removeImageFile = () => {
-    setImageFile(null);
-    if (fileInputImageRef.current) {
-      fileInputImageRef.current.value = "";
-    }
-  };
-
-  const idle = !focused && input.trim().length === 0 && !imageFile;
+  const idle = !focused && input.trim().length === 0;
 
   return (
     <div
@@ -80,42 +67,70 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     >
       <div className="max-w-4xl mx-auto">
         <div className="relative">
-          {/* Attachment indicators */}
-          <div className="flex gap-3 mb-3 items-start flex-wrap">
-            {imageFile && previewUrl && (
-              <div className="relative group">
-                <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-orange-300 dark:border-orange-700 shadow-sm bg-slate-50 dark:bg-slate-800">
-                  <img
-                    src={previewUrl}
-                    alt={imageFile.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <button
-                  onClick={removeImageFile}
-                  className="absolute -top-2 -right-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-1 shadow transition-colors"
-                  aria-label="Remove image"
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
+          {/* Image Previews */}
+          {uploadedImageArtifacts.length > 0 && (
+            <div className="flex gap-3 mb-3 items-start flex-wrap">
+              {uploadedImageArtifacts.map((artifact) => (
+                <div key={artifact.artifactId} className="relative group">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-orange-300 dark:border-orange-700 shadow-sm bg-slate-50 dark:bg-slate-800">
+                    <img
+                      src={`data:image/jpeg;base64,${artifact.data}`}
+                      alt={artifact.fileName}
+                      className="object-cover w-full h-full"
                     />
-                  </svg>
-                </button>
-                <div className="text-[10px] mt-1 text-center text-orange-600 dark:text-orange-400 w-32 md:w-40 truncate">
-                  {imageFile.name}
+                  </div>
+                  {onRemoveImageArtifact && (
+                    <button
+                      onClick={() => onRemoveImageArtifact(artifact.artifactId)}
+                      className="absolute -top-2 -right-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-1 shadow transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <div className="text-[10px] mt-1 text-center text-orange-600 dark:text-orange-400 w-32 md:w-40 truncate">
+                    {artifact.fileName}
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* File upload indicators - only show for data when no images */}
+          {hasUploadedData && uploadedImageArtifacts.length === 0 && (
+            <div className="flex gap-2 mb-3 items-center">
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                <svg
+                  className="w-4 h-4 text-emerald-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300">
+                  Data uploaded
+                </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Input container */}
           <div
@@ -174,10 +189,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
                 placeholder={
-                  imageFile
-                    ? "Describe what you see in the image..."
-                    : sessionId
+                  uploadedImageArtifacts.length > 0 && hasUploadedData
+                    ? "Ask questions about your images and data..."
+                    : uploadedImageArtifacts.length > 0
+                    ? "Describe what you see or ask questions about the images..."
+                    : hasUploadedData
                     ? "Ask questions about your data..."
+                    : sessionId
+                    ? "Ask questions about your data or upload files..."
                     : "Type your message here..."
                 }
                 rows={1}

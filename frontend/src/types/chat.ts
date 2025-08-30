@@ -20,4 +20,6 @@ export interface ChatMessage {
   code?: string;
   // For vision/user messages we can carry a local preview URL (object URL or remote URL)
   imageUrl?: string;
+  // For multiple images in user messages
+  imageUrls?: string[];
 }

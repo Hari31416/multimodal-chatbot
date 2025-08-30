@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { getJSON, postForm } from "../../api/client";
+import { getJSON, deleteJSON } from "../../api/client";
 
 interface SessionInfo {
-  session_id: string;
-  created_at: number;
-  last_accessed: number;
-  title?: string;
+  sessionId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  numMessages: number;
+  numArtifacts: number;
 }
 
 interface ChatMessage {
@@ -95,21 +98,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     setError("");
     try {
       const response = await getJSON<{
-        sessionIds: string[];
-        titles: string[];
-      }>("/all-sessions");
+        sessions: SessionInfo[];
+      }>("/sessions/list?user_id=default_user");
 
-      const sessionInfos: SessionInfo[] = response.sessionIds.map(
-        (id, index) => ({
-          session_id: id,
-          created_at: Date.now(),
-          last_accessed: Date.now(),
-          title: response.titles[index] || "Chat Session",
-        })
-      );
-
-      sessionsCacheRef.current = { data: sessionInfos, fetchedAt: now };
-      setSessions(sessionInfos);
+      sessionsCacheRef.current = { data: response.sessions, fetchedAt: now };
+      setSessions(response.sessions);
     } catch (err: any) {
       setError("Failed to load sessions: " + err.message);
     } finally {
@@ -119,33 +112,34 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const loadSessionHistory = async (sessionId: string) => {
     try {
-      const formData = new FormData();
-      formData.append("sessionId", sessionId);
+      const response = await getJSON<{
+        sessionId: string;
+        userId: string;
+        createdAt: string;
+        updatedAt: string;
+        title: string;
+        numMessages: number;
+        numArtifacts: number;
+        messages: ChatMessage[];
+      }>(`/sessions/${sessionId}?user_id=default_user`);
 
-      const response = await postForm<SessionHistory>(
-        "/all-previous-chats",
-        formData
-      );
       onSessionSelect(sessionId, response.messages);
     } catch (err: any) {
       setError("Failed to load session history: " + err.message);
     }
   };
-
   const handleDeleteSession = async (sessionId: string) => {
     if (deleting) return;
     setDeleting(sessionId);
     setError("");
     try {
-      const formData = new FormData();
-      formData.append("sessionId", sessionId);
-      await postForm("/delete-session", formData);
-      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+      await deleteJSON(`/sessions/delete/${sessionId}?user_id=default_user`);
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
       if (sessionsCacheRef.current) {
         sessionsCacheRef.current = {
           ...sessionsCacheRef.current,
           data: sessionsCacheRef.current.data.filter(
-            (s) => s.session_id !== sessionId
+            (s) => s.sessionId !== sessionId
           ),
         };
       }
@@ -162,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -281,13 +275,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="p-2 space-y-1">
                 {sessions.map((session) => (
                   <button
-                    key={session.session_id}
+                    key={session.sessionId}
                     onClick={() => {
-                      loadSessionHistory(session.session_id);
+                      loadSessionHistory(session.sessionId);
                       onToggle();
                     }}
                     className={`relative group w-full text-left p-3 rounded-md transition-colors duration-200 ${
-                      currentSessionId === session.session_id
+                      currentSessionId === session.sessionId
                         ? "bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
                         : "hover:bg-slate-50 dark:hover:bg-slate-700"
                     }`}
@@ -299,7 +293,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                       </h3>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {formatDate(session.last_accessed)}
+                          {formatDate(session.updatedAt)}
+                        </span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                          {session.numMessages} messages
                         </span>
                       </div>
                     </div>
@@ -309,16 +306,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                       title="Delete session"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setConfirmingId(session.session_id);
+                        setConfirmingId(session.sessionId);
                       }}
-                      disabled={deleting === session.session_id}
+                      disabled={deleting === session.sessionId}
                       className={`absolute top-2 right-2 p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-opacity ${
-                        deleting === session.session_id
+                        deleting === session.sessionId
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
                       }`}
                     >
-                      {deleting === session.session_id ? (
+                      {deleting === session.sessionId ? (
                         <svg
                           className="w-4 h-4 animate-spin"
                           viewBox="0 0 24 24"

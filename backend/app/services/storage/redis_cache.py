@@ -10,6 +10,7 @@ Key prefix and structure follow storage_options_temp.md:
   - Session Indexes on User ID:          prefix + "session_index:user:{user_id}" -> JSON list[SessionInfo]
   - Message Indexes on Session ID:        prefix + "message_index:session:{session_id}" -> JSON list[str] (messageIds)
   - Artifact Indexes on Message ID:       prefix + "artifact_index:message:{message_id}" -> JSON list[str] (artifactIds)
+  - Uploaded File Artifacts on Session ID: prefix + "file_artifact_index:session:{session_id}" -> JSON list[str] (artifactIds)
 
 This helper provides typed get/set/delete plus index maintenance. It uses
 Pydantic models from app.models.object_models.
@@ -80,6 +81,9 @@ class RedisCache:
 
     def k_artifact_index_by_message(self, message_id: str) -> str:
         return f"{self.prefix}artifact_index:message:{message_id}"
+
+    def k_file_artifact_index_by_session(self, session_id: str) -> str:
+        return f"{self.prefix}file_artifact_index:session:{session_id}"
 
     # --- low-level helpers ------------------------------------------------
     def _set_json(self, key: str, payload_json: str, ttl: Optional[int] = None) -> None:
@@ -186,6 +190,15 @@ class RedisCache:
             # Clear the message index key itself
             deleted += int(
                 self.redis.delete(self.k_message_index_by_session(session_id))
+            )
+
+            # Remove file artifacts from session and clean up the index
+            file_artifact_ids = self.get_file_artifact_ids_for_session(session_id) or []
+            for aid in file_artifact_ids:
+                deleted += self.delete_artifact(aid)
+            # Clear the file artifact index key itself
+            deleted += int(
+                self.redis.delete(self.k_file_artifact_index_by_session(session_id))
             )
 
         # Delete the session key
@@ -430,6 +443,52 @@ class RedisCache:
         except Exception:
             return None
 
+    def _add_file_artifact_to_session_index(
+        self, session_id: str, artifact_id: str, *, ttl: Optional[int] = None
+    ) -> None:
+        key = self.k_file_artifact_index_by_session(session_id)
+        existing = self._get_json(key)
+        ids: List[str] = []
+        if existing:
+            try:
+                ids = json.loads(existing)
+            except Exception:
+                logger.warning("Corrupt file artifact index payload; resetting")
+        if artifact_id not in ids:
+            ids.append(artifact_id)
+        self._set_json(key, json.dumps(ids), ttl)
+
+    def _remove_file_artifact_from_session_index(
+        self, session_id: str, artifact_id: str
+    ) -> None:
+        key = self.k_file_artifact_index_by_session(session_id)
+        existing = self._get_json(key)
+        if not existing:
+            return
+        try:
+            ids = json.loads(existing)
+        except Exception:
+            return
+        ids = [i for i in ids if i != artifact_id]
+        self._set_json(key, json.dumps(ids))
+
+    def get_file_artifact_ids_for_session(
+        self, session_id: str, user_id: Optional[str] = None
+    ) -> Optional[List[str]]:
+        # Validate session ownership first if user_id provided
+        if user_id is not None:
+            session = self.get_session(session_id, user_id=user_id)
+            if session is None:
+                return None
+
+        raw = self._get_json(self.k_file_artifact_index_by_session(session_id))
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except Exception:
+            return None
+
     # --- High-level ownership validation methods ----------------------------
     def get_session_with_full_ownership(
         self, session_id: str, user_id: str
@@ -486,6 +545,72 @@ class RedisCache:
         if artifact is None:
             return 0
         return self.delete_artifact(artifact_id, message_id=message_id)
+
+    # --- File artifact management methods -----------------------------------
+    def add_file_artifact_to_session(
+        self,
+        session_id: str,
+        artifact_id: str,
+        user_id: Optional[str] = None,
+        *,
+        ttl: Optional[int] = None,
+    ) -> None:
+        """Add a file artifact to a session's file artifact index with ownership validation."""
+        # Validate session ownership if user_id provided
+        if user_id is not None:
+            session = self.get_session(session_id, user_id=user_id)
+            if session is None:
+                raise ValueError(f"Session {session_id} not found or access denied")
+
+        self._add_file_artifact_to_session_index(session_id, artifact_id, ttl=ttl)
+
+    def remove_file_artifact_from_session(
+        self, session_id: str, artifact_id: str, user_id: Optional[str] = None
+    ) -> None:
+        """Remove a file artifact from a session's file artifact index with ownership validation."""
+        # Validate session ownership if user_id provided
+        if user_id is not None:
+            session = self.get_session(session_id, user_id=user_id)
+            if session is None:
+                raise ValueError(f"Session {session_id} not found or access denied")
+
+        self._remove_file_artifact_from_session_index(session_id, artifact_id)
+
+    def get_file_artifacts_for_session(
+        self, session_id: str, user_id: Optional[str] = None
+    ) -> Optional[List[Artifact]]:
+        """Get all file artifacts for a session with ownership validation."""
+        artifact_ids = self.get_file_artifact_ids_for_session(
+            session_id, user_id=user_id
+        )
+        if artifact_ids is None:
+            return None
+
+        artifacts = []
+        for artifact_id in artifact_ids:
+            artifact = self.get_artifact(artifact_id)
+            if artifact is not None:
+                artifacts.append(artifact)
+
+        return artifacts if artifacts else None
+
+    def delete_file_artifact_with_ownership(
+        self, artifact_id: str, session_id: str, user_id: str
+    ) -> int:
+        """Delete a file artifact with session ownership validation."""
+        # Validate session ownership first
+        session = self.get_session(session_id, user_id=user_id)
+        if session is None:
+            return 0
+
+        # Check if artifact is in the session's file artifact index
+        file_artifact_ids = self.get_file_artifact_ids_for_session(session_id)
+        if file_artifact_ids is None or artifact_id not in file_artifact_ids:
+            return 0
+
+        # Remove from session index and delete artifact
+        self._remove_file_artifact_from_session_index(session_id, artifact_id)
+        return int(self.redis.delete(self.k_artifact(artifact_id)))
 
 
 # Convenience default instance

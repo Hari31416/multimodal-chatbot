@@ -6,6 +6,8 @@ import pandas as pd
 from PIL import Image
 
 from app.models.response_models import CSVUploadResponse, ImageUploadResponse
+from app.models.object_models import CSVArtifact, ImageArtifact
+from app.services.storage import redis_cache, DataFrameHandler, ImageHandler
 from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
@@ -56,14 +58,38 @@ async def upload_csv(
             delimiter=delimiter,
             header=0 if header else None,
         )
-        csv_data = base64.b64encode(content).decode("utf-8")
-
-        response = CSVUploadResponse(
-            sessionId=sessionId,
-            userId=userId,
+        file_handler = DataFrameHandler(df)
+        csv_data = file_handler.get_base64_representation()
+        # Create CSV artifact object
+        csv_artifact = CSVArtifact(
             data=csv_data,
             type="csv",
-            description=f"CSV file with shape {df.shape}",
+            description=description or f"CSV file with shape {df.shape}",
+            num_rows=df.shape[0],
+            num_columns=df.shape[1],
+        )
+
+        # Save artifact to Redis
+        redis_cache.save_artifact(csv_artifact)
+
+        # Add to session's file artifact index
+        try:
+            redis_cache.add_file_artifact_to_session(
+                session_id=sessionId,
+                artifact_id=csv_artifact.artifactId,
+                user_id=userId,
+            )
+        except ValueError as ve:
+            logger.error(f"Session validation failed: {str(ve)}")
+            raise HTTPException(status_code=403, detail=str(ve))
+
+        response = CSVUploadResponse(
+            data=csv_data,
+            type="csv",
+            description=description or f"CSV file with shape {df.shape}",
+            num_rows=df.shape[0],
+            num_columns=df.shape[1],
+            artifactId=csv_artifact.artifactId,
         )
         logger.info(
             f"Uploaded CSV with shape: {df.shape}, artifactId: {response.artifactId}, sessionId: {sessionId}"
@@ -108,9 +134,8 @@ async def upload_image(
         thumbnail.save(thumb_buffered, format=image.format)
         thumb_data = base64.b64encode(thumb_buffered.getvalue()).decode("utf-8")
 
-        response = ImageUploadResponse(
-            sessionId=sessionId,
-            userId=userId,
+        # Create Image artifact object
+        image_artifact = ImageArtifact(
             data=img_data,
             type="image",
             description=caption or f"Image of size {image.size}",
@@ -119,6 +144,32 @@ async def upload_image(
             format=image.format,
             alt_text=alt_text or f"Uploaded image of size {image.size}",
             thumbnail_data=thumb_data,
+        )
+
+        # Save artifact to Redis
+        redis_cache.save_artifact(image_artifact)
+
+        # Add to session's file artifact index
+        try:
+            redis_cache.add_file_artifact_to_session(
+                session_id=sessionId,
+                artifact_id=image_artifact.artifactId,
+                user_id=userId,
+            )
+        except ValueError as ve:
+            logger.error(f"Session validation failed: {str(ve)}")
+            raise HTTPException(status_code=403, detail=str(ve))
+
+        response = ImageUploadResponse(
+            data=img_data,
+            type="image",
+            description=caption or f"Image of size {image.size}",
+            width=image.width,
+            height=image.height,
+            format=image.format,
+            alt_text=alt_text or f"Uploaded image of size {image.size}",
+            thumbnail_data=thumb_data,
+            artifactId=image_artifact.artifactId,
         )
         logger.info(
             f"Uploaded image with size: {image.size}, artifactId: {response.artifactId}, sessionId: {sessionId}"

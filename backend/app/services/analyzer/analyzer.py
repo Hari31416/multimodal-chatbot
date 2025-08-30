@@ -8,8 +8,9 @@ from typing import Dict, Any
 
 from .python_iterpreters import LocalPythonExecutor
 from .plotting_utils import mpl_fig_to_data_uri
-from ..utils import create_simple_logger, set_publish_matplotlib_template
-from ..models import AnalysisResponseModalChatbot, AnalyzeResponse
+from app.utils import create_simple_logger, set_publish_matplotlib_template
+
+from app.models.models import AnalysisResponseModalChatbot, AnalyzeResponse
 
 
 load_dotenv()
@@ -113,9 +114,17 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
     code = response.code
     plot = response.plot
 
+    if not code:
+        logger.info("No code provided in response, returning explanation only.")
+        return AnalyzeResponse(
+            reply=explanation,
+            code=None,
+            artifact=None,
+            artifact_is_mime_type=False,
+        )
+
     if not code.endswith("\nresult"):
         logger.warning("Code does not end with 'result', appending it.")
-        code += "\nresult"
 
     local = LocalPythonExecutor(
         additional_functions={"mpl_fig_to_data_uri": mpl_fig_to_data_uri},
@@ -123,14 +132,15 @@ async def handle_llm_response(response: str, df: pd.DataFrame) -> AnalyzeRespons
     )
     local.send_variables({"df": df, "plt": plt, "np": np, "pd": pd})
 
-    artifact, status_code = local.run_code(code)
+    artifact, status_code, error_message = local.run_code(code)
     if status_code != 0:
         logger.error(f"Code execution failed.")
         return AnalyzeResponse(
-            reply="Code execution failed. Please retry.",
+            reply=f"Code execution failed. Please retry. Here is the error message:\n{error_message}",
             code=code,
             artifact=None,
             artifact_is_mime_type=False,
+            code_execution_failed=True,
         )
 
     artifact_is_mime_type = _is_artifact_mime_type(artifact)

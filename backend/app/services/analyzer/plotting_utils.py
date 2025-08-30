@@ -3,7 +3,7 @@ import matplotlib
 import io
 import base64
 
-from ..utils import set_publish_matplotlib_template, create_simple_logger
+from app.utils import set_publish_matplotlib_template, create_simple_logger
 
 set_publish_matplotlib_template()
 
@@ -121,7 +121,7 @@ def mpl_axes_to_base64(ax: "matplotlib.axes.Axes", **kwargs) -> str:
         id(ax.figure),
         kwargs,
     )
-    return mpl_fig_to_base64(ax.figure, **kwargs)
+    return mpl_fig_to_data_uri(ax.figure, **kwargs)
 
 
 _MIME_MAP: dict[str, str] = {

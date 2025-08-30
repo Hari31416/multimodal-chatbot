@@ -13,7 +13,6 @@ from .local_python_interpreter import (
     BASE_BUILTIN_MODULES,
     DEFAULT_MAX_LEN_OUTPUT,
     InterpreterError,
-    CodeOutput,
     find_spec,
 )
 
@@ -279,7 +278,7 @@ class LocalPythonExecutor:
         code_action: str,
         show_code: bool = True,
         show_logs: bool = True,
-    ) -> tuple[str, int] | None:
+    ) -> tuple[str, int, str] | None:
         """Execute code locally with rich-formatted output similar to E2BPythonInterpreter.
 
         Args:
@@ -319,7 +318,7 @@ class LocalPythonExecutor:
                 )
             except Exception:
                 console.print(str(e), style="error")
-            return None, 1
+            return None, 1, str(e)
 
         # Display results (only stdout/logs, mirroring E2B sandbox behavior)
         exec_id = self._execution_count
@@ -332,7 +331,7 @@ class LocalPythonExecutor:
             show_logs=show_logs,
         )
 
-        return output, 0
+        return output, 0, None
 
     def send_variables(self, variables: dict[str, Any]):
         self.state.update(variables)

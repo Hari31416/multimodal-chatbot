@@ -29,14 +29,17 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
     setInput,
     pending,
     error,
-    imageFile,
-    setImageFile,
     sessionId,
     columns,
     head,
+    uploadedArtifactIds,
+    hasUploadedImages,
+    uploadedImageArtifacts,
     handleNewChat,
     handleSend,
     handleCsvUpload,
+    handleImageUpload,
+    removeImageArtifact,
     loadSessionMessages,
   } = useChatLogic();
 
@@ -139,8 +142,6 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           input={input}
           setInput={setInput}
           pending={pending}
-          imageFile={imageFile}
-          setImageFile={setImageFile}
           sessionId={sessionId}
           pickerOpen={pickerOpen}
           setPickerOpen={setPickerOpen}
@@ -148,6 +149,11 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           error={error}
           fileInputImageRef={fileInputImageRef}
           fileInputCsvRef={fileInputCsvRef}
+          onImageUpload={handleImageUpload}
+          hasUploadedImages={hasUploadedImages}
+          hasUploadedData={columns.length > 0}
+          uploadedImageArtifacts={uploadedImageArtifacts}
+          onRemoveImageArtifact={removeImageArtifact}
         />
 
         <DatasetModal
@@ -162,10 +168,16 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           ref={fileInputImageRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0] || null;
-            setImageFile(f);
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) {
+              // Upload images immediately
+              handleImageUpload(files);
+              // Reset the input
+              e.target.value = "";
+            }
           }}
         />
         <input

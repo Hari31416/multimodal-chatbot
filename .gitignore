@@ -149,3 +149,4 @@ secrets.json
 *.temp
 *temp.ipynb
 *_temp.*
+temp

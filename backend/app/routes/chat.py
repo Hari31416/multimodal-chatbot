@@ -84,7 +84,7 @@ async def send_message(
     message: str = Form(...),
     session_id: str = Form(...),
     user_id: str = Form(...),
-    artifact_ids: Optional[List[str]] = Form(None),
+    artifact_ids: Optional[str] = Form(None),
 ):
     """
     Send a chat message and get LLM response. A single endpoint to handle text,
@@ -94,6 +94,7 @@ async def send_message(
     - If image artifact IDs are provided, it's a vision request.
     - If a CSV artifact ID is provided, it's a data analysis request.
     """
+    artifact_ids = artifact_ids.split(",") if artifact_ids else []
     artifacts_from_session = set(
         redis_cache.get_file_artifact_ids_for_session(session_id)
     )

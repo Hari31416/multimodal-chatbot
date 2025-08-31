@@ -274,13 +274,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             {!loading && !error && sessions.length > 0 && (
               <div className="p-2 space-y-1">
                 {sessions.map((session) => (
-                  <button
+                  <div
                     key={session.sessionId}
                     onClick={() => {
                       loadSessionHistory(session.sessionId);
                       onToggle();
                     }}
-                    className={`relative group w-full text-left p-3 rounded-md transition-colors duration-200 ${
+                    className={`relative group w-full text-left p-3 rounded-md transition-colors duration-200 cursor-pointer ${
                       currentSessionId === session.sessionId
                         ? "bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
                         : "hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -352,7 +352,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </svg>
                       )}
                     </button>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}

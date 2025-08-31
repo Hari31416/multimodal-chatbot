@@ -1,4 +1,4 @@
-import { postJSON, getJSON, API_BASE_URL } from "../../api/client";
+import { postJSON, getJSON, deleteJSON, API_BASE_URL } from "../../api/client";
 import {
   ChatActions,
   UploadedImageArtifact,
@@ -271,30 +271,91 @@ export function useFileUploads({
     }
   }
 
-  function removeImageArtifact(artifactId: string) {
-    setUploadedArtifactIds((prev) => prev.filter((id) => id !== artifactId));
-    setUploadedImageArtifacts((prev) => {
-      const remaining = prev.filter(
-        (artifact) => artifact.artifactId !== artifactId
+  async function removeImageArtifact(artifactId: string) {
+    // Ensure we have a session before attempting deletion
+    let activeSession = sessionId;
+    if (!activeSession) {
+      console.log("No session ID available, creating one for image deletion");
+      activeSession = await ensureSessionExists(
+        sessionId,
+        setSessionId,
+        setError,
+        "image deletion"
       );
-      setHasUploadedImages(remaining.length > 0);
-      return remaining;
-    });
+
+      if (!activeSession) {
+        console.error("Failed to create session for image deletion");
+        return;
+      }
+    }
+
+    try {
+      // Call the delete artifact endpoint
+      await deleteJSON(
+        `/artifacts/delete/${artifactId}?message_id=dummy&session_id=${activeSession}&user_id=default_user`
+      );
+
+      // Remove from local state
+      setUploadedArtifactIds((prev) => prev.filter((id) => id !== artifactId));
+      setUploadedImageArtifacts((prev) => {
+        const remaining = prev.filter(
+          (artifact) => artifact.artifactId !== artifactId
+        );
+        setHasUploadedImages(remaining.length > 0);
+        return remaining;
+      });
+    } catch (error) {
+      console.error("Failed to delete image artifact:", error);
+      setError("Failed to delete image artifact");
+    }
   }
 
-  function removeCsvArtifact() {
-    setUploadedArtifactIds((prev) => {
-      // Remove the CSV artifact ID if it exists
-      const csvArtifactId = actions.uploadedCsvArtifact?.artifactId;
-      if (csvArtifactId) {
-        return prev.filter((id) => id !== csvArtifactId);
+  async function removeCsvArtifact() {
+    if (!actions.uploadedCsvArtifact) {
+      console.warn("No CSV artifact available for deletion");
+      return;
+    }
+
+    // Ensure we have a session before attempting deletion
+    let activeSession = sessionId;
+    if (!activeSession) {
+      console.log("No session ID available, creating one for CSV deletion");
+      activeSession = await ensureSessionExists(
+        sessionId,
+        setSessionId,
+        setError,
+        "CSV deletion"
+      );
+
+      if (!activeSession) {
+        console.error("Failed to create session for CSV deletion");
+        return;
       }
-      return prev;
-    });
-    setUploadedCsvArtifact(null);
-    setColumns([]);
-    setHead([]);
-    setCsvFile(null);
+    }
+
+    try {
+      // Call the delete artifact endpoint
+      await deleteJSON(
+        `/artifacts/delete/${actions.uploadedCsvArtifact.artifactId}?message_id=dummy&session_id=${activeSession}&user_id=default_user`
+      );
+
+      // Remove from local state
+      setUploadedArtifactIds((prev) => {
+        // Remove the CSV artifact ID if it exists
+        const csvArtifactId = actions.uploadedCsvArtifact?.artifactId;
+        if (csvArtifactId) {
+          return prev.filter((id) => id !== csvArtifactId);
+        }
+        return prev;
+      });
+      setUploadedCsvArtifact(null);
+      setColumns([]);
+      setHead([]);
+      setCsvFile(null);
+    } catch (error) {
+      console.error("Failed to delete CSV artifact:", error);
+      setError("Failed to delete CSV artifact");
+    }
   }
 
   return {

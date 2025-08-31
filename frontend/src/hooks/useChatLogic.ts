@@ -20,6 +20,7 @@ export const useChatLogic = () => {
       setUploadedImageArtifacts: state.setUploadedImageArtifacts,
       csvFile: state.csvFile,
       uploadedImageArtifacts: state.uploadedImageArtifacts,
+      uploadedCsvArtifact: state.uploadedCsvArtifact,
     },
     sessionId: state.sessionId,
     setSessionId: state.setSessionId,

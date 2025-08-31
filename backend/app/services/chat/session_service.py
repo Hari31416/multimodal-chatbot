@@ -57,6 +57,7 @@ class SessionService:
         session_id: str,
         user_id: str,
         include_artifacts: bool = True,
+        include_only_for_frontend: bool = False,
     ) -> Optional[SessionResponse]:
         """
         Get a complete session with all messages and artifacts using optimized batch operations.
@@ -96,6 +97,12 @@ class SessionService:
 
             # Step 3: Batch-fetch all message objects
             messages = await self._batch_fetch_messages(message_ids, session_id)
+            if include_only_for_frontend:
+                logger.info("Filtering messages for frontend display only")
+                before = len(messages)
+                messages = [m for m in messages if m.should_display_in_frontend()]
+                after = len(messages)
+                logger.info(f"Filtered messages from {before} to {after} for frontend")
             if not messages:
                 logger.warning(f"Failed to fetch messages for session {session_id}")
                 return None

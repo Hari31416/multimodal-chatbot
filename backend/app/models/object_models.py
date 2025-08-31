@@ -100,9 +100,27 @@ class Message(BaseModel):
     artifacts: Optional[List[Artifact]] = Field(
         None, description="List of artifacts associated with the message"
     )
+    messageType: Literal[
+        "system",
+        "reasoning",
+        "llm_response",
+        "user_request",
+        "tool_response",
+        "tool_call",
+        "retry",
+    ] = Field("llm_response", description="Type of the message")
 
     def __repr__(self) -> str:
         return f"<Message id={self.messageId} role={self.role} content={self.content[:20]}...> artifacts={len(self.artifacts) if self.artifacts else 0}>"
+
+    def should_display_in_frontend(self):
+        """Determine if the message should be shown in the frontend."""
+        return self.messageType in [
+            "system",
+            "reasoning",
+            "llm_response",
+            "user_request",
+        ]
 
 
 # all data required to reconstruct a session

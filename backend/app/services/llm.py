@@ -9,6 +9,7 @@ from app.models.object_models import (
     ImageArtifact,
     CSVArtifact,
     TextArtifact,
+    CodeArtifact,
 )
 from app.utils import create_simple_logger
 from app.prompts import Prompts
@@ -120,6 +121,7 @@ async def _handle_messages_push(
             sessionId=session_id,
             role="system",
             content=system_prompt,
+            messageType="system",
         )
         await push_messages(
             messages=[past_messages],
@@ -157,6 +159,7 @@ async def text_completion(message: str, session_id: str, user_id: str) -> Messag
         sessionId=session_id,
         role="user",
         content=message,
+        messageType="user_request",
     )
     messages = await _handle_messages_push(
         session_id=session_id,
@@ -173,6 +176,7 @@ async def text_completion(message: str, session_id: str, user_id: str) -> Messag
             sessionId=session_id,
             role="assistant",
             content=response,
+            messageType="llm_response",
         )
         await push_messages(
             messages=[response_message],
@@ -198,6 +202,7 @@ async def vision_completion(
         sessionId=session_id,
         role="user",
         content=message,
+        messageType="user_request",
     )
     messages = await _handle_messages_push(
         session_id=session_id,
@@ -218,6 +223,7 @@ async def vision_completion(
             sessionId=session_id,
             role="assistant",
             content=response,
+            messageType="llm_response",
         )
         await push_messages(
             messages=[response_message],
@@ -249,6 +255,7 @@ async def analyze_data(
             sessionId=session_id,
             role="assistant",
             content="Error during calling the LLM for data analysis after multiple attempts. Please try again later.",
+            messageType="llm_response",
         )
     if df_artifact is None:
         logger.info(
@@ -266,6 +273,7 @@ async def analyze_data(
         sessionId=session_id,
         role="user",
         content=message,
+        messageType="user_request" if try_number == 0 else "retry",
     )
 
     if try_number == 0:
@@ -304,6 +312,7 @@ async def analyze_data(
             sessionId=session_id,
             role="assistant",
             content=response,
+            messageType="tool_call",
         )
         await push_messages(
             messages=[response_message],
@@ -318,6 +327,7 @@ async def analyze_data(
             sessionId=session_id,
             role="assistant",
             content="Error during calling the LLM for data analysis. Please try again later.",
+            messageType="llm_response",
         )
 
     result = await handle_llm_response(
@@ -341,23 +351,24 @@ async def analyze_data(
             sessionId=session_id,
             role="assistant",
             content=result.reply,
+            messageType="llm_response" if try_number == 0 else "retry",
         )
 
     result_message = Message(
         sessionId=session_id,
         role="assistant",
-        content="After running the code, here is the result. I will for any follow-up questions if needed.",
+        content=result.reply,
     )
     artifacts = []
-    # if result.code:
-    #     logger.info(f"Code generated. Creating code artifact.")
-    #     code_artifact = CodeArtifact(
-    #         type="code",
-    #         data=result.code,
-    #         description=f"Code artifact for message in session {session_id} messageid {current_message.messageId}",
-    #         language="python",
-    #     )
-    #     artifacts.append(code_artifact)
+    if result.code:
+        logger.info(f"Code generated. Creating code artifact.")
+        code_artifact = CodeArtifact(
+            type="code",
+            data=result.code,
+            description=f"Code artifact for message in session {session_id} messageid {current_message.messageId}",
+            language="python",
+        )
+        artifacts.append(code_artifact)
 
     if result.artifact and result.artifact_is_mime_type:
         logger.info(f"Image generated. Creating image artifact.")

@@ -25,7 +25,7 @@ async def start_new_session(user_id: str):
 
     try:
         # Create a new session
-        new_session = Session(userId=user_id, title="New Chat Session")
+        new_session = Session(userId=user_id, title=None)
 
         # Save to Redis cache
         redis_cache.save_session(new_session, cascade=False)

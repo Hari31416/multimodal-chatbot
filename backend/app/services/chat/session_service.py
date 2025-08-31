@@ -36,7 +36,7 @@ class SessionService:
         self.cache = cache or redis_cache
 
     async def create_new_session(
-        self, user_id: str, title: str = "New Chat Session"
+        self, user_id: str, title: Optional[str] = None
     ) -> Session:
         """
         Create a new chat session for a user.

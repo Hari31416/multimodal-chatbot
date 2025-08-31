@@ -89,9 +89,8 @@ async def send_message(
     - If a CSV artifact ID is provided, it's a data analysis request.
     """
     artifact_ids = artifact_ids.split(",") if artifact_ids else []
-    artifacts_from_session = set(
-        redis_cache.get_file_artifact_ids_for_session(session_id)
-    )
+    arts = redis_cache.get_file_artifact_ids_for_session(session_id)
+    artifacts_from_session = set(arts or [])
     artifact_ids_final = []
     for artifact_id in artifact_ids or []:
         if artifact_id in artifacts_from_session:

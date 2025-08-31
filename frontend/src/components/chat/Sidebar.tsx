@@ -6,7 +6,7 @@ interface SessionInfo {
   userId: string;
   createdAt: string;
   updatedAt: string;
-  title: string;
+  title: string | null;
   numMessages: number;
   numArtifacts: number;
 }
@@ -176,7 +176,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const truncateTitle = (title: string, maxLength: number = 30) => {
+  const truncateTitle = (title: string | null, maxLength: number = 30) => {
+    if (!title) return "New Chat";
     return title.length > maxLength
       ? title.substring(0, maxLength) + "..."
       : title;
@@ -289,14 +290,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex flex-col pr-6">
                       {/* space for delete btn */}
                       <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">
-                        {truncateTitle(session.title || "Chat Session")}
+                        {truncateTitle(session.title)}
                       </h3>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                           {formatDate(session.updatedAt)}
-                        </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
-                          {session.numMessages} messages
                         </span>
                       </div>
                     </div>

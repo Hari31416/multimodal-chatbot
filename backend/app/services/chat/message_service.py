@@ -224,12 +224,40 @@ class MessageService:
             message_id: The ID of the message that was added
         """
         try:
+            # Get the message that was just added
+            message = self.cache.get_message(message_id, session_id=session.sessionId)
+            if message is None:
+                logger.warning(f"Could not find message {message_id} after adding to session {session.sessionId}")
+                return
+
             # Update session's last updated time
             session.updatedAt = datetime.now()
 
             # Update message count
             message_ids = self.cache.get_message_ids_for_session(session.sessionId)
             session.numMessages = len(message_ids) if message_ids else 0
+
+            # Check if this is the first user message and update title accordingly
+            if message.role == "user" and session.title is None:
+                # Check if this is the first user message by looking at all messages
+                all_messages = []
+                if message_ids:
+                    for mid in message_ids:
+                        msg = self.cache.get_message(mid, session_id=session.sessionId)
+                        if msg:
+                            all_messages.append(msg)
+                
+                # Check if there are any previous user messages
+                previous_user_messages = [msg for msg in all_messages if msg.role == "user" and msg.messageId != message_id]
+                
+                if len(previous_user_messages) == 0:
+                    # This is the first user message, update the title
+                    # Truncate to a reasonable length for the title
+                    title_content = message.content.strip()
+                    if len(title_content) > 50:
+                        title_content = title_content[:47] + "..."
+                    session.title = title_content
+                    logger.info(f"Updated session {session.sessionId} title to first user message: {session.title}")
 
             # Save updated session (without cascade to avoid infinite loop)
             self.cache.save_session(session, cascade=False)

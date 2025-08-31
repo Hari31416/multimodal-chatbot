@@ -22,6 +22,7 @@ interface ChatInputProps {
     description: string;
   }>;
   onRemoveImageArtifact?: (artifactId: string) => void;
+  onRemoveCsvArtifact?: () => void;
   uploadProgress?: { [fileName: string]: number };
   uploadedCsvArtifact?: {
     artifactId: string;
@@ -48,6 +49,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   hasUploadedData = false,
   uploadedImageArtifacts = [],
   onRemoveImageArtifact,
+  onRemoveCsvArtifact,
   uploadProgress = {},
   uploadedCsvArtifact = null,
 }) => {
@@ -198,6 +200,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         />
                       </svg>
                     </div>
+                    {onRemoveCsvArtifact && (
+                      <button
+                        onClick={onRemoveCsvArtifact}
+                        className="absolute -top-2 -right-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-1 shadow transition-colors"
+                        aria-label="Remove CSV file"
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
                     <div className="text-[10px] mt-1 text-center text-emerald-600 dark:text-emerald-400 w-32 md:w-40">
                       <div className="truncate font-medium">
                         {uploadedCsvArtifact.fileName}

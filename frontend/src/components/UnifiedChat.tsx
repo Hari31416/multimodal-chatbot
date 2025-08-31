@@ -42,6 +42,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
     handleCsvUpload,
     handleImageUpload,
     removeImageArtifact,
+    removeCsvArtifact,
     loadSessionMessages,
   } = useChatLogic();
 
@@ -156,6 +157,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           hasUploadedData={columns.length > 0}
           uploadedImageArtifacts={uploadedImageArtifacts}
           onRemoveImageArtifact={removeImageArtifact}
+          onRemoveCsvArtifact={removeCsvArtifact}
           uploadProgress={uploadProgress}
           uploadedCsvArtifact={uploadedCsvArtifact}
         />

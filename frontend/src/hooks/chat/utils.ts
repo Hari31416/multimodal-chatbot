@@ -231,6 +231,23 @@ export function extractCsvDataFromSession(
   setHead: (head: any[][]) => void,
   setUploadedCsvArtifact: (artifact: any) => void
 ) {
+  // Validate that the setter functions are actually functions
+  if (typeof setColumns !== "function") {
+    console.error("setColumns is not a function:", setColumns);
+    return;
+  }
+  if (typeof setHead !== "function") {
+    console.error("setHead is not a function:", setHead);
+    return;
+  }
+  if (typeof setUploadedCsvArtifact !== "function") {
+    console.error(
+      "setUploadedCsvArtifact is not a function:",
+      setUploadedCsvArtifact
+    );
+    return;
+  }
+
   const sessionHasCsvData = backendMessages.some((msg: any) => {
     return (
       msg.artifacts &&
@@ -277,6 +294,7 @@ export function extractCsvDataFromSession(
               return; // Found CSV data, stop searching
             } catch (e) {
               console.warn("Could not parse CSV data from artifact:", e);
+              // Continue to next artifact instead of failing completely
             }
           }
         }
@@ -284,8 +302,12 @@ export function extractCsvDataFromSession(
     }
   } else {
     // Clear CSV data if no CSV artifacts found
-    setColumns([]);
-    setHead([]);
+    try {
+      setColumns([]);
+      setHead([]);
+    } catch (e) {
+      console.error("Error clearing CSV data:", e);
+    }
   }
 }
 

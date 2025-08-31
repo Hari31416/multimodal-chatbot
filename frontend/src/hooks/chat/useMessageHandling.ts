@@ -30,10 +30,14 @@ export function useMessageHandling({
     uploadedArtifactIds,
     uploadedImageArtifacts,
     columns,
+    setColumns,
+    setHead,
+    setCsvFile,
     setUploadedArtifactIds,
     setHasUploadedImages,
     setUploadedImageArtifacts,
     setUploadedCsvArtifact,
+    setUploadProgress,
   } = actions;
 
   function pushMessage(partial: Omit<ChatMessage, "id">) {
@@ -60,12 +64,16 @@ export function useMessageHandling({
     );
 
     // Extract CSV data from session
-    extractCsvDataFromSession(
-      backendMessages,
-      actions.setColumns,
-      actions.setHead,
-      setUploadedCsvArtifact
-    );
+    try {
+      extractCsvDataFromSession(
+        backendMessages,
+        setColumns,
+        setHead,
+        setUploadedCsvArtifact
+      );
+    } catch (e) {
+      console.error("Error extracting CSV data from session:", e);
+    }
 
     // Extract all artifact IDs from the session
     const { allArtifactIds, sessionHasImages } =
@@ -78,11 +86,11 @@ export function useMessageHandling({
     setSessionId(sessionId);
     setInput("");
     setError("");
-    actions.setCsvFile(null);
+    setCsvFile(null);
     setUploadedArtifactIds([]);
     setUploadedImageArtifacts([]);
     setUploadedCsvArtifact(null);
-    actions.setUploadProgress({});
+    setUploadProgress({});
     setPending(false);
   }
 
@@ -90,14 +98,14 @@ export function useMessageHandling({
     setMessages([]);
     setInput("");
     setError("");
-    actions.setCsvFile(null);
-    actions.setColumns([]);
-    actions.setHead([]);
+    setCsvFile(null);
+    setColumns([]);
+    setHead([]);
     setUploadedArtifactIds([]);
     setHasUploadedImages(false);
     setUploadedImageArtifacts([]);
     setUploadedCsvArtifact(null);
-    actions.setUploadProgress({});
+    setUploadProgress({});
     setPending(false);
 
     try {

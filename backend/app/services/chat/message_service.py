@@ -227,7 +227,9 @@ class MessageService:
             # Get the message that was just added
             message = self.cache.get_message(message_id, session_id=session.sessionId)
             if message is None:
-                logger.warning(f"Could not find message {message_id} after adding to session {session.sessionId}")
+                logger.warning(
+                    f"Could not find message {message_id} after adding to session {session.sessionId}"
+                )
                 return
 
             # Update session's last updated time
@@ -246,10 +248,14 @@ class MessageService:
                         msg = self.cache.get_message(mid, session_id=session.sessionId)
                         if msg:
                             all_messages.append(msg)
-                
+
                 # Check if there are any previous user messages
-                previous_user_messages = [msg for msg in all_messages if msg.role == "user" and msg.messageId != message_id]
-                
+                previous_user_messages = [
+                    msg
+                    for msg in all_messages
+                    if msg.role == "user" and msg.messageId != message_id
+                ]
+
                 if len(previous_user_messages) == 0:
                     # This is the first user message, update the title
                     # Truncate to a reasonable length for the title
@@ -257,7 +263,9 @@ class MessageService:
                     if len(title_content) > 50:
                         title_content = title_content[:47] + "..."
                     session.title = title_content
-                    logger.info(f"Updated session {session.sessionId} title to first user message: {session.title}")
+                    logger.info(
+                        f"Updated session {session.sessionId} title to first user message: {session.title}"
+                    )
 
             # Save updated session (without cascade to avoid infinite loop)
             self.cache.save_session(session, cascade=False)

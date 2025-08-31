@@ -161,7 +161,7 @@ async def get_chat_history(session_id: str, user_id: str):
     """
     try:
         complete_session = await session_service.get_complete_session(
-            session_id, user_id
+            session_id, user_id, include_only_for_frontend=True
         )
 
         if complete_session is None:

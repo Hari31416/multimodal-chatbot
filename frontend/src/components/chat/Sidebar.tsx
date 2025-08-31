@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getJSON, deleteJSON } from "../../api/client";
+import { BackendMessage } from "../../hooks/chat/types";
 
 interface SessionInfo {
   sessionId: string;
@@ -25,7 +26,7 @@ interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   currentSessionId: string | null;
-  onSessionSelect: (sessionId: string, messages: ChatMessage[]) => void;
+  onSessionSelect: (sessionId: string, messages: BackendMessage[]) => void;
   onNewChat: () => void;
   dark: boolean;
 }

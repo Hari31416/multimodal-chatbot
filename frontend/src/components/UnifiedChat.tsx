@@ -9,6 +9,7 @@ import {
   Sidebar,
 } from "./chat";
 import { useChatLogic } from "../hooks/useChatLogic";
+import { BackendMessage } from "../hooks/chat/types";
 
 interface UnifiedChatProps {
   dark: boolean;
@@ -84,7 +85,10 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
   };
 
   // Handle session selection from sidebar
-  const handleSessionSelect = (sessionId: string, backendMessages: any[]) => {
+  const handleSessionSelect = (
+    sessionId: string,
+    backendMessages: BackendMessage[]
+  ) => {
     loadSessionMessages(sessionId, backendMessages);
     // Reset other states when switching sessions
     setPickerOpen(false);

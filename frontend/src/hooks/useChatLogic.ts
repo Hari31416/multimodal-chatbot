@@ -73,6 +73,7 @@ export const useChatLogic = () => {
     // Actions
     handleNewChat: messageHandling.handleNewChat,
     handleSend: messageHandling.handleSend,
+    handleRetry: messageHandling.handleRetry,
     handleCsvUpload: fileUploads.handleCsvUpload,
     handleImageUpload: fileUploads.handleImageUpload,
     removeImageArtifact: fileUploads.removeImageArtifact,

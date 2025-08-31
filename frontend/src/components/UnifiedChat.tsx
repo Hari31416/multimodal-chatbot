@@ -39,6 +39,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
     uploadProgress,
     handleNewChat,
     handleSend,
+    handleRetry,
     handleCsvUpload,
     handleImageUpload,
     removeImageArtifact,
@@ -134,6 +135,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
               message={message}
               isLast={message === messages[messages.length - 1]}
               pending={pending}
+              onRetry={handleRetry}
             />
           ))}
 

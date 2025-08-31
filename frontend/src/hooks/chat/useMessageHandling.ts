@@ -113,6 +113,19 @@ export function useMessageHandling({
     }
   }
 
+  async function handleRetry(message: ChatMessage) {
+    if (message.role !== "user") return;
+
+    // Set the input to the message content
+    setInput(message.content);
+
+    // If the message had images, we would need to restore them, but for now just retry text
+    // TODO: Handle image restoration for retry
+
+    // Call handleSend which will use the set input
+    await handleSend();
+  }
+
   async function handleSend() {
     if (!input.trim()) return;
     setError("");
@@ -279,5 +292,6 @@ export function useMessageHandling({
     loadSessionMessages,
     handleNewChat,
     handleSend,
+    handleRetry,
   };
 }

@@ -9,16 +9,32 @@ interface ChatMessageProps {
   message: ChatMessageType;
   isLast: boolean;
   pending: boolean;
+  onRetry?: (message: ChatMessageType) => void;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
   message,
   isLast,
   pending,
+  onRetry,
 }) => {
   const isUser = message.role === "user";
   const [showImage, setShowImage] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  const handleRetry = () => {
+    if (onRetry) {
+      onRetry(message);
+    }
+  };
 
   // Get images to display - prefer imageUrls array, fallback to single imageUrl
   const imagesToDisplay =
@@ -165,6 +181,46 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   {message.content}
                 </p>
               </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                  title="Copy message"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleRetry}
+                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                  title="Retry message"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="flex justify-end mt-1">
               <span className="text-xs text-slate-400">You</span>
@@ -224,6 +280,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     </div>
                     Thinking
                   </span>
+                )}
+                {!pending && (
+                  <button
+                    onClick={handleCopy}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                    title="Copy message"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
                 )}
               </div>
               {(message.artifact || message.code) && (

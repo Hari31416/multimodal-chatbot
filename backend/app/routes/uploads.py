@@ -67,6 +67,7 @@ async def upload_csv(
             description=description or f"CSV file with shape {df.shape}",
             num_rows=df.shape[0],
             num_columns=df.shape[1],
+            columns=list(df.columns),
         )
 
         # Save artifact to Redis
@@ -91,6 +92,9 @@ async def upload_csv(
             num_columns=df.shape[1],
             artifactId=csv_artifact.artifactId,
         )
+
+        # Add columns information to the response
+        response.columns = list(df.columns)
         logger.info(
             f"Uploaded CSV with shape: {df.shape}, artifactId: {response.artifactId}, sessionId: {sessionId}"
         )

@@ -112,40 +112,20 @@ export function useFileUploads({
       // Add the artifact ID to our uploaded artifacts list
       setUploadedArtifactIds((prev) => [...prev, res.artifactId]);
 
-      // Decode the CSV data to extract columns and preview
-      let rowCount = 0;
-      let parsedHeaders: string[] = [];
-      try {
-        const csvContent = atob(res.data);
-        const lines = csvContent.split("\n");
-        parsedHeaders = lines[0]
-          .split(",")
-          .map((h) => h.trim().replace(/"/g, ""));
-        const previewRows = lines
-          .slice(1, 6)
-          .map((line) =>
-            line.split(",").map((cell) => cell.trim().replace(/"/g, ""))
-          )
-          .filter((row) => row.some((cell) => cell.length > 0));
+      // Use columns from response metadata instead of decoding compressed data
+      const parsedHeaders = res.columns || [];
+      const previewRows: any[][] = []; // No preview data since we're using compressed storage
 
-        // Calculate total row count (excluding header)
-        rowCount = lines.length - 1;
+      setColumns(parsedHeaders);
+      setHead(previewRows);
 
-        setColumns(parsedHeaders);
-        setHead(previewRows);
-      } catch (e) {
-        console.warn("Could not parse CSV preview:", e);
-        setColumns([]);
-        setHead([]);
-      }
-
-      // Store the uploaded CSV information
+      // Store the uploaded CSV information using metadata from response
       setUploadedCsvArtifact({
         artifactId: res.artifactId,
         fileName: f.name,
         description: res.description,
         columns: parsedHeaders,
-        rowCount: rowCount,
+        rowCount: res.num_rows || 0,
       });
 
       setCsvFile(null);

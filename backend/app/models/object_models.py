@@ -64,6 +64,9 @@ class CSVArtifact(BaseArtifact):
     type: Literal["csv"] = Field("csv", description="Type of the artifact")
     num_rows: Optional[int] = Field(None, description="Number of rows in the CSV")
     num_columns: Optional[int] = Field(None, description="Number of columns in the CSV")
+    columns: Optional[List[str]] = Field(
+        None, description="List of column names in the CSV"
+    )
 
 
 class TextArtifact(BaseArtifact):

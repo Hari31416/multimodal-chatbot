@@ -39,7 +39,10 @@ export const DatasetModal: React.FC<DatasetModalProps> = ({
               Dataset Overview
             </h2>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {columns.length} columns • {head.length} preview rows
+              {columns.length} columns •{" "}
+              {head.length > 0
+                ? `${head.length} preview rows`
+                : "compressed storage"}
             </span>
           </div>
           <div className="flex items-center gap-2">

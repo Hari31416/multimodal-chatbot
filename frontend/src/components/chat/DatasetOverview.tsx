@@ -74,7 +74,7 @@ export const DatasetOverview: React.FC<DatasetOverviewProps> = ({
               ))}
             </div>
           </div>
-          {head.length > 0 && (
+          {head.length > 0 ? (
             <details className="group">
               <summary className="cursor-pointer text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1">
                 <svg
@@ -118,6 +118,10 @@ export const DatasetOverview: React.FC<DatasetOverviewProps> = ({
                 </table>
               </div>
             </details>
+          ) : (
+            <div className="text-xs text-slate-500 dark:text-slate-400 italic">
+              Preview data not available (compressed storage enabled)
+            </div>
           )}
         </div>
       )}

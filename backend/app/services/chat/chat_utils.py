@@ -199,12 +199,14 @@ def create_csv_artifact(df: Union[pd.DataFrame, str, bytes], **kwargs) -> CSVArt
     pandas_df = df_handler.get_python_friendly_format()
     csv_data = df_handler.get_base64_representation()
     num_rows, num_columns = pandas_df.shape
+    columns = list(pandas_df.columns)
 
     csv_artifact = CSVArtifact(
         type="csv",
         data=csv_data,
         num_rows=num_rows,
         num_columns=num_columns,
+        columns=columns,
         **kwargs,
     )
     return csv_artifact

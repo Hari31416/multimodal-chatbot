@@ -346,6 +346,8 @@ class SessionService:
         """
         try:
             sessions = self.cache.get_sessions_for_user(user_id)
+            # filter for only those that have non-zero messages
+            sessions = [s for s in sessions if s.numMessages > 0]
             return sessions or []
 
         except Exception as e:

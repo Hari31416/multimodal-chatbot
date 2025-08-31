@@ -22,6 +22,14 @@ interface ChatInputProps {
     description: string;
   }>;
   onRemoveImageArtifact?: (artifactId: string) => void;
+  uploadProgress?: { [fileName: string]: number };
+  uploadedCsvArtifact?: {
+    artifactId: string;
+    fileName: string;
+    description: string;
+    columns: string[];
+    rowCount: number;
+  } | null;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -40,6 +48,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   hasUploadedData = false,
   uploadedImageArtifacts = [],
   onRemoveImageArtifact,
+  uploadProgress = {},
+  uploadedCsvArtifact = null,
 }) => {
   const attachmentButtonRef = useRef<HTMLButtonElement | null>(null);
   const [focused, setFocused] = useState(false);
@@ -67,14 +77,40 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     >
       <div className="max-w-4xl mx-auto">
         <div className="relative">
-          {/* Image Previews */}
-          {uploadedImageArtifacts.length > 0 && (
+          {/* Image Previews and Upload Progress */}
+          {(uploadedImageArtifacts.length > 0 ||
+            Object.keys(uploadProgress).length > 0) && (
             <div className="flex gap-3 mb-3 items-start flex-wrap">
+              {/* Show progress for files being uploaded */}
+              {Object.entries(uploadProgress).map(([fileName, progress]) => (
+                <div key={`uploading-${fileName}`} className="relative group">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 shadow-sm bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        {progress}%
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] mt-1 text-center text-blue-600 dark:text-blue-400 w-32 md:w-40 truncate">
+                    Uploading {fileName}
+                  </div>
+                  {/* Progress bar */}
+                  <div className="absolute bottom-6 left-1 right-1 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Show uploaded images */}
               {uploadedImageArtifacts.map((artifact) => (
                 <div key={artifact.artifactId} className="relative group">
                   <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-orange-300 dark:border-orange-700 shadow-sm bg-slate-50 dark:bg-slate-800">
                     <img
-                      src={`data:image/jpeg;base64,${artifact.data}`}
+                      src={`data:image/png;base64,${artifact.data}`}
                       alt={artifact.fileName}
                       className="object-cover w-full h-full"
                     />
@@ -108,27 +144,71 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </div>
           )}
 
-          {/* File upload indicators - only show for data when no images */}
-          {hasUploadedData && uploadedImageArtifacts.length === 0 && (
-            <div className="flex gap-2 mb-3 items-center">
-              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                <svg
-                  className="w-4 h-4 text-emerald-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                <span className="text-sm text-emerald-700 dark:text-emerald-300">
-                  Data uploaded
-                </span>
-              </div>
+          {/* CSV Preview */}
+          {uploadedCsvArtifact && (
+            <div className="flex gap-3 mb-3 items-start flex-wrap">
+              {/* Show progress for CSV files being uploaded */}
+              {Object.entries(uploadProgress)
+                .filter(([fileName]) => fileName.toLowerCase().endsWith(".csv"))
+                .map(([fileName, progress]) => (
+                  <div
+                    key={`uploading-csv-${fileName}`}
+                    className="relative group"
+                  >
+                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 shadow-sm bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          {progress}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] mt-1 text-center text-blue-600 dark:text-blue-400 w-32 md:w-40 truncate">
+                      Uploading {fileName}
+                    </div>
+                    {/* Progress bar */}
+                    <div className="absolute bottom-6 left-1 right-1 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+
+              {/* Show uploaded CSV preview if no CSV is being uploaded */}
+              {uploadedCsvArtifact &&
+                Object.keys(uploadProgress).every(
+                  (fileName) => !fileName.toLowerCase().endsWith(".csv")
+                ) && (
+                  <div className="relative group">
+                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border border-emerald-300 dark:border-emerald-700 shadow-sm bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                      {/* CSV File Icon */}
+                      <svg
+                        className="w-12 h-12 text-emerald-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-[10px] mt-1 text-center text-emerald-600 dark:text-emerald-400 w-32 md:w-40">
+                      <div className="truncate font-medium">
+                        {uploadedCsvArtifact.fileName}
+                      </div>
+                      <div className="text-[9px] mt-0.5 opacity-75">
+                        {uploadedCsvArtifact.columns.length} cols,{" "}
+                        {uploadedCsvArtifact.rowCount} rows
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
 

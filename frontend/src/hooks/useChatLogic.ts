@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { postJSON, postForm, getJSON } from "../api/client";
+import { postJSON, postForm, getJSON, API_BASE_URL } from "../api/client";
 import { ChatMessage } from "../types/chat";
 
 interface BackendMessage {
@@ -41,6 +41,16 @@ export const useChatLogic = () => {
       description: string;
     }>
   >([]);
+  const [uploadedCsvArtifact, setUploadedCsvArtifact] = useState<{
+    artifactId: string;
+    fileName: string;
+    description: string;
+    columns: string[];
+    rowCount: number;
+  } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{
+    [fileName: string]: number;
+  }>({});
 
   function pushMessage(partial: Omit<ChatMessage, "id">) {
     setMessages((m) => [
@@ -96,10 +106,10 @@ export const useChatLogic = () => {
                 if (imageArtifact.data.startsWith("data:")) {
                   return imageArtifact.data;
                 } else {
-                  // Determine the image format from the artifact or default to jpeg
+                  // Determine the image format from the artifact or default to png
                   const format = imageArtifact.format
                     ? imageArtifact.format.toLowerCase()
-                    : "jpeg";
+                    : "png";
                   const mimeType =
                     format === "png"
                       ? "image/png"
@@ -107,7 +117,9 @@ export const useChatLogic = () => {
                       ? "image/gif"
                       : format === "webp"
                       ? "image/webp"
-                      : "image/jpeg";
+                      : format === "jpeg" || format === "jpg"
+                      ? "image/jpeg"
+                      : "image/png"; // Default to PNG as specified
                   return `data:${mimeType};base64,${imageArtifact.data}`;
                 }
               }
@@ -142,6 +154,23 @@ export const useChatLogic = () => {
             raw: chartArtifact.data,
             isMime: true,
           };
+        }
+
+        // Look for text artifacts
+        const textArtifact = artifacts.find((a: any) => a.type === "text");
+        if (textArtifact) {
+          modality = "data";
+          if (artifact) {
+            // If we already have a chart artifact, add text to it
+            artifact.text = textArtifact.data;
+          } else {
+            // Create a new artifact with text
+            artifact = {
+              text: textArtifact.data,
+              raw: textArtifact.data,
+              isMime: false,
+            };
+          }
         }
       }
 
@@ -251,6 +280,16 @@ export const useChatLogic = () => {
 
                 setColumns(headers);
                 setHead(previewRows);
+
+                // Set uploaded CSV artifact for display
+                setUploadedCsvArtifact({
+                  artifactId: artifact.artifactId,
+                  fileName: artifact.description || "Loaded CSV",
+                  description: artifact.description || "CSV data from session",
+                  columns: headers,
+                  rowCount: lines.length - 1, // Exclude header row
+                });
+
                 break;
               } catch (e) {
                 console.warn("Could not parse CSV data from artifact:", e);
@@ -291,6 +330,8 @@ export const useChatLogic = () => {
     setCsvFile(null);
     setUploadedArtifactIds([]);
     setUploadedImageArtifacts([]);
+    setUploadedCsvArtifact(null);
+    setUploadProgress({});
     setPending(false);
   }
 
@@ -304,6 +345,8 @@ export const useChatLogic = () => {
     setUploadedArtifactIds([]);
     setHasUploadedImages(false);
     setUploadedImageArtifacts([]);
+    setUploadedCsvArtifact(null);
+    setUploadProgress({});
     setPending(false);
     try {
       // Use fixed user_id for now - in production this would come from auth
@@ -355,11 +398,11 @@ export const useChatLogic = () => {
     if (uploadedImageArtifacts.length > 0) {
       // Use the first image as the main preview for backwards compatibility
       const firstImage = uploadedImageArtifacts[0];
-      imageUrl = `data:image/jpeg;base64,${firstImage.data}`;
+      imageUrl = `data:image/png;base64,${firstImage.data}`;
 
       // Create URLs for all images
       imageUrls = uploadedImageArtifacts.map(
-        (artifact) => `data:image/jpeg;base64,${artifact.data}`
+        (artifact) => `data:image/png;base64,${artifact.data}`
       );
     }
 
@@ -383,6 +426,7 @@ export const useChatLogic = () => {
     setUploadedImageArtifacts([]);
     setUploadedArtifactIds([]);
     setHasUploadedImages(false);
+    setUploadedCsvArtifact(null);
 
     try {
       // Use the unified chat endpoint
@@ -412,17 +456,50 @@ export const useChatLogic = () => {
       let responseModality: ChatMessage["modality"] = "text";
 
       if (res.artifacts && res.artifacts.length > 0) {
-        const artifact = res.artifacts[0];
-        if (artifact.type === "code") {
-          code = artifact.content || artifact.data;
-          responseModality = "data";
-        } else if (artifact.type === "chart" || artifact.type === "image") {
-          normalizedArtifacts = {
-            chart: artifact.data || artifact.content,
-            raw: artifact.data || artifact.content,
-            isMime: true,
-          };
-          responseModality = "data";
+        // Process all artifacts, not just the first one
+        for (const art of res.artifacts) {
+          if (art.type === "code") {
+            code = art.content || art.data;
+            responseModality = "data";
+          } else if (art.type === "chart") {
+            normalizedArtifacts = normalizedArtifacts || {
+              chart: art.data || art.content,
+              raw: art.data || art.content,
+              isMime: true,
+            };
+            responseModality = "data";
+          } else if (art.type === "image") {
+            // Handle image artifacts with proper data URL formatting
+            let imageData = art.data || art.content;
+            if (imageData && !imageData.startsWith("data:")) {
+              // Determine the image format from the artifact or default to png
+              const format = art.format ? art.format.toLowerCase() : "png";
+              const mimeType =
+                format === "png"
+                  ? "image/png"
+                  : format === "gif"
+                  ? "image/gif"
+                  : format === "webp"
+                  ? "image/webp"
+                  : format === "jpeg" || format === "jpg"
+                  ? "image/jpeg"
+                  : "image/png"; // Default to PNG as specified
+              imageData = `data:${mimeType};base64,${imageData}`;
+            }
+            normalizedArtifacts = normalizedArtifacts || {
+              chart: imageData,
+              raw: imageData,
+              isMime: true,
+            };
+            responseModality = "data";
+          } else if (art.type === "text") {
+            normalizedArtifacts = normalizedArtifacts || {
+              text: art.data || art.content,
+              raw: art.data || art.content,
+              isMime: false,
+            };
+            responseModality = "data";
+          }
         }
       }
 
@@ -455,6 +532,9 @@ export const useChatLogic = () => {
     setError("");
 
     try {
+      // Initialize progress for this file
+      setUploadProgress((prev) => ({ ...prev, [f.name]: 0 }));
+
       const form = new FormData();
       form.append("file", f);
       form.append("userId", "default_user"); // Use fixed user_id for now
@@ -471,7 +551,8 @@ export const useChatLogic = () => {
 
       form.append("sessionId", activeSession);
 
-      const res = await postForm<{
+      // Use XMLHttpRequest for progress tracking
+      const res = await new Promise<{
         artifactId: string;
         sessionId: string;
         userId: string;
@@ -480,16 +561,59 @@ export const useChatLogic = () => {
         description: string;
         columns?: string[];
         headPreview?: any[][];
-      }>("/upload/csv", form);
+      }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round(
+              (event.loaded / event.total) * 100
+            );
+            setUploadProgress((prev) => ({
+              ...prev,
+              [f.name]: percentComplete,
+            }));
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (e) {
+              reject(new Error("Invalid JSON response"));
+            }
+          } else {
+            reject(new Error(`Upload failed: ${xhr.statusText}`));
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          reject(new Error("Upload failed"));
+        });
+
+        xhr.open("POST", API_BASE_URL + "/upload/csv");
+        xhr.send(form);
+      });
+
+      // Clear progress for this file
+      setUploadProgress((prev) => {
+        const newProgress = { ...prev };
+        delete newProgress[f.name];
+        return newProgress;
+      });
 
       // Add the artifact ID to our uploaded artifacts list
       setUploadedArtifactIds((prev) => [...prev, res.artifactId]);
 
       // Decode the CSV data to extract columns and preview
+      let rowCount = 0;
+      let parsedHeaders: string[] = [];
       try {
         const csvContent = atob(res.data);
         const lines = csvContent.split("\n");
-        const headers = lines[0]
+        parsedHeaders = lines[0]
           .split(",")
           .map((h) => h.trim().replace(/"/g, ""));
         const previewRows = lines
@@ -499,7 +623,10 @@ export const useChatLogic = () => {
           )
           .filter((row) => row.some((cell) => cell.length > 0));
 
-        setColumns(headers);
+        // Calculate total row count (excluding header)
+        rowCount = lines.length - 1;
+
+        setColumns(parsedHeaders);
         setHead(previewRows);
       } catch (e) {
         console.warn("Could not parse CSV preview:", e);
@@ -507,15 +634,26 @@ export const useChatLogic = () => {
         setHead([]);
       }
 
-      pushMessage({
-        role: "assistant",
-        content: `CSV uploaded successfully. ${res.description}. Data analysis mode enabled.`,
-        modality: "data",
+      // Store the uploaded CSV information
+      setUploadedCsvArtifact({
+        artifactId: res.artifactId,
+        fileName: f.name,
+        description: res.description,
+        columns: parsedHeaders,
+        rowCount: rowCount,
       });
 
       setCsvFile(null);
     } catch (err: any) {
       setError(err.message);
+      // Clear progress on error
+      if (file) {
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[file.name];
+          return newProgress;
+        });
+      }
     }
   }
 
@@ -542,15 +680,19 @@ export const useChatLogic = () => {
         description: string;
       }> = [];
 
-      // Upload each image
+      // Upload each image with progress tracking
       for (const file of files) {
+        // Initialize progress for this file
+        setUploadProgress((prev) => ({ ...prev, [file.name]: 0 }));
+
         const form = new FormData();
         form.append("file", file);
         form.append("userId", "default_user");
         form.append("sessionId", activeSession);
         form.append("caption", `Uploaded image: ${file.name}`);
 
-        const res = await postForm<{
+        // Use XMLHttpRequest for progress tracking
+        const uploadResult = await new Promise<{
           artifactId: string;
           sessionId: string;
           userId: string;
@@ -560,16 +702,57 @@ export const useChatLogic = () => {
           width: number;
           height: number;
           format: string;
-        }>("/upload/image", form);
+        }>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
 
-        uploadedIds.push(res.artifactId);
+          xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = Math.round(
+                (event.loaded / event.total) * 100
+              );
+              setUploadProgress((prev) => ({
+                ...prev,
+                [file.name]: percentComplete,
+              }));
+            }
+          });
+
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response);
+              } catch (e) {
+                reject(new Error("Invalid JSON response"));
+              }
+            } else {
+              reject(new Error(`Upload failed: ${xhr.statusText}`));
+            }
+          });
+
+          xhr.addEventListener("error", () => {
+            reject(new Error("Upload failed"));
+          });
+
+          xhr.open("POST", API_BASE_URL + "/upload/image");
+          xhr.send(form);
+        });
+
+        uploadedIds.push(uploadResult.artifactId);
 
         // Store image data for preview
         newImageArtifacts.push({
-          artifactId: res.artifactId,
-          data: res.data,
+          artifactId: uploadResult.artifactId,
+          data: uploadResult.data,
           fileName: file.name,
-          description: res.description,
+          description: uploadResult.description,
+        });
+
+        // Clear progress for this file
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[file.name];
+          return newProgress;
         });
       }
 
@@ -581,6 +764,8 @@ export const useChatLogic = () => {
       // Remove the success message - we'll show previews instead
     } catch (err: any) {
       setError(err.message);
+      // Clear all progress on error
+      setUploadProgress({});
     }
   }
 
@@ -617,6 +802,8 @@ export const useChatLogic = () => {
     uploadedArtifactIds,
     hasUploadedImages,
     uploadedImageArtifacts,
+    uploadedCsvArtifact,
+    uploadProgress,
     handleNewChat,
     handleSend,
     handleCsvUpload,

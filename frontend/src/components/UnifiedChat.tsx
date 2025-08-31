@@ -35,6 +35,8 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
     uploadedArtifactIds,
     hasUploadedImages,
     uploadedImageArtifacts,
+    uploadedCsvArtifact,
+    uploadProgress,
     handleNewChat,
     handleSend,
     handleCsvUpload,
@@ -154,6 +156,8 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
           hasUploadedData={columns.length > 0}
           uploadedImageArtifacts={uploadedImageArtifacts}
           onRemoveImageArtifact={removeImageArtifact}
+          uploadProgress={uploadProgress}
+          uploadedCsvArtifact={uploadedCsvArtifact}
         />
 
         <DatasetModal

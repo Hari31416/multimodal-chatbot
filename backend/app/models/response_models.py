@@ -96,7 +96,18 @@ class GetArtifactResponse(BaseModel):
     model_config = ConfigDict(discriminator="type")
 
 
-# simple chat-message /sessions/<session_id>/<message-id>
+# Delete an artifact /artifacts/delete/<artifact_id>
+class DeleteArtifactResponse(BaseModel):
+    responseId: str = Field(
+        default_factory=different_ids_factory["response"],
+        description="Unique response ID",
+    )
+    message: str = Field(..., description="Result message of the delete operation")
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="Response timestamp in UTC"
+    )
+
+
 class MessageResponse(Message):
     responseId: str = Field(
         default_factory=different_ids_factory["response"],

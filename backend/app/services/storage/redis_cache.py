@@ -539,6 +539,26 @@ class RedisCache:
     ) -> int:
         """Delete an artifact with full ownership chain validation."""
         # Validate ownership through the chain first
+        file_artifact_ids = self.get_file_artifact_ids_for_session(
+            session_id, user_id=user_id
+        )
+        if file_artifact_ids and artifact_id in file_artifact_ids:
+            logger.info(
+                f"Artifact {artifact_id} is a file artifact; deleting artifacte and from  upload index."
+            )
+            deletd_keys = int(self.redis.delete(self.k_artifact(artifact_id)))
+            remaining_file_artifacts = [
+                id_ for id_ in file_artifact_ids if id_ != artifact_id
+            ]
+            self._set_json(
+                self.k_file_artifact_index_by_session(session_id),
+                json.dumps(remaining_file_artifacts),
+            )
+            return deletd_keys
+
+        logger.info(
+            f"Artifact {artifact_id} is not a file artifact; validating through message ownership and deleting normal way."
+        )
         artifact = self.get_artifact_with_full_ownership(
             artifact_id, message_id, session_id, user_id
         )

@@ -21,10 +21,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const isUser = message.role === "user";
   const [showImage, setShowImage] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Hide after 2 seconds
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -182,28 +185,35 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
-                  title="Copy message"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="relative">
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+                    title="Copy message"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                  {copied && (
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-green-500 text-white text-xs rounded shadow-lg opacity-100 transition-opacity duration-500">
+                      Copied!
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleRetry}
-                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
                   title="Retry message"
                 >
                   <svg
@@ -264,7 +274,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <div className="markdown-output">
                 <MarkdownRenderer content={message.content} />
               </div>
-              <div className="flex gap-2 items-center flex-wrap px-1">
+              <div className="flex gap-2 items-center flex-wrap px-1 justify-end">
                 {pending && isLast && (
                   <span className="text-xs text-slate-400 flex items-center gap-1">
                     <div className="flex space-x-1">
@@ -282,25 +292,32 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </span>
                 )}
                 {!pending && (
-                  <button
-                    onClick={handleCopy}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
-                    title="Copy message"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="relative">
+                    <button
+                      onClick={handleCopy}
+                      className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+                      title="Copy message"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                    {copied && (
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-green-500 text-white text-xs rounded shadow-lg opacity-100 transition-opacity duration-500">
+                        Copied!
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               {(message.artifact || message.code) && (

@@ -254,6 +254,15 @@ async def analyze_data(
             role="assistant",
             content="Error during calling the LLM for data analysis after multiple attempts. Please try again later.",
         )
+    if df_artifact is None:
+        logger.info(
+            f"No DataFrame artifact provided, fetching from session {session_id}."
+        )
+        df_artifact = redis_cache.get_session_csv_artifact(session_id, user_id)
+        push_df_artifact = False
+    else:
+        push_df_artifact = True
+
     df_handler = DataFrameHandler(df_artifact.data)
     df = df_handler.get_python_friendly_format()
     system_prompt = Prompts.format_system_prompt_for_analyzer(df)
@@ -264,7 +273,7 @@ async def analyze_data(
     )
 
     if try_number == 0:
-        artifacts = [df_artifact]
+        artifacts = [df_artifact] if push_df_artifact else []
         if image_artifacts:
             if isinstance(image_artifacts, ImageArtifact):
                 artifacts.append(image_artifacts)
@@ -323,7 +332,7 @@ async def analyze_data(
     if result.code_execution_failed:
         logger.warning(f"Code execution failed in LLM response handling. Trying again.")
         return await analyze_data(
-            df=df,
+            df_artifact=df_artifact,
             message=result.reply,
             session_id=session_id,
             user_id=user_id,
@@ -340,8 +349,8 @@ async def analyze_data(
 
     result_message = Message(
         sessionId=session_id,
-        role="user",
-        content="After running the code, here is the result. Use this for any follow-up questions if needed.",
+        role="assistant",
+        content="After running the code, here is the result. I will for any follow-up questions if needed.",
     )
     artifacts = []
     # if result.code:

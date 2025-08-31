@@ -1,6 +1,8 @@
+from dotenv import load_dotenv
 import logging
 import os
 
+load_dotenv()
 
 END = "\033[0m"
 BOLD = "\033[1m"
@@ -64,7 +66,7 @@ def create_simple_logger(
     logger.local = True
     logger.setLevel(level)
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     # remove any existing handlers

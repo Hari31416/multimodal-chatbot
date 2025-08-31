@@ -612,6 +612,43 @@ class RedisCache:
         self._remove_file_artifact_from_session_index(session_id, artifact_id)
         return int(self.redis.delete(self.k_artifact(artifact_id)))
 
+    def get_session_csv_artifact(
+        self, session_id: str, user_id: str
+    ) -> Optional[Artifact]:
+        """Get the first CSV artifact associated with a session, if any."""
+        file_artifact_ids = self.get_file_artifact_ids_for_session(
+            session_id, user_id=user_id
+        )
+        if not file_artifact_ids:
+            return None
+
+        for artifact_id in file_artifact_ids:
+            artifact = self.get_artifact(artifact_id)
+            if artifact and artifact.type == "csv":
+                return artifact
+
+        return None
+
+    def set_session_type(
+        self, session_id: str, session_type: str, user_id: Optional[str] = None
+    ) -> None:
+        """Set the type of a session (e.g., 'text', 'vision', 'data_analysis')."""
+        session = self.get_session(session_id, user_id=user_id)
+        if session is None:
+            raise ValueError(f"Session {session_id} not found or access denied")
+
+        session.sessionType = session_type
+        self.save_session(session)
+
+    def get_session_type(
+        self, session_id: str, user_id: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the type of a session."""
+        session = self.get_session(session_id, user_id=user_id)
+        if session is None:
+            return None
+        return session.sessionType
+
 
 # Convenience default instance
 redis_cache = RedisCache()

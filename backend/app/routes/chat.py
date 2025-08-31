@@ -115,37 +115,32 @@ async def send_message(
     artifacts = [art for _, art in artifacts.items() if art is not None]
     unique_artifact_types = set(art.type for art in artifacts)
     logger.info(f"Unique artifact types to attach: {unique_artifact_types}")
+    session_type = redis_cache.get_session_type(session_id)
 
-    if len(unique_artifact_types) == 1 and "image" in unique_artifact_types:
-        logger.info("Handling as vision request")
-        return await handle_vision_request(
-            message=message,
-            image_artifacts=artifacts,
-            session_id=session_id,
-            user_id=user_id,
-        )
+    if "csv" in unique_artifact_types or session_type == "data_analysis":
+        logger.info("Handling as data analysis request with possible image artifacts.")
+        redis_cache.set_session_type(session_id, "data_analysis")
 
-    if len(unique_artifact_types) == 1 and "csv" in unique_artifact_types:
-        logger.info("Handling as data analysis request.")
-        if len(unique_artifact_types) > 1:
-            logger.warning(
-                "Multiple artifact types found for data analysis request. Only CSV artifacts will be considered."
-            )
-        return await handle_data_analysis_request(
-            message=message,
-            df_artifact=artifacts[0],
-            session_id=session_id,
-            user_id=user_id,
-        )
-
-    if "csv" in unique_artifact_types:
-        logger.info("Handling as data analysis request with image artifacts.")
         df_artifact = next((art for art in artifacts if art.type == "csv"), None)
         image_artifacts = [art for art in artifacts if art.type == "image"]
+        if image_artifacts:
+            logger.info(f"Found total image artifacts: {len(image_artifacts)}")
+
         return await handle_data_analysis_request(
             message=message,
             df_artifact=df_artifact,
             image_artifacts=image_artifacts if image_artifacts else None,
+            session_id=session_id,
+            user_id=user_id,
+        )
+
+    if len(unique_artifact_types) == 1 and "image" in unique_artifact_types:
+        if session_type != "image":
+            redis_cache.set_session_type(session_id, "image")
+        logger.info("Handling as vision request")
+        return await handle_vision_request(
+            message=message,
+            image_artifacts=artifacts,
             session_id=session_id,
             user_id=user_id,
         )

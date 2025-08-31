@@ -129,6 +129,10 @@ class Session(BaseModel):
     )
     numMessages: int = Field(0, description="Number of messages in the session")
 
+    sessionType: Literal["chat", "image", "data_analysis"] = Field(
+        "chat", description="Type of the session"
+    )
+
     def __repr__(self) -> str:
         return f"<Session id={self.sessionId} userId={self.userId} title={self.title} numMessages={len(self.messages)}>"
 

@@ -1,11 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from app.models import models
-from app.services import storage, llm
 from app.utils import create_simple_logger
+from app.routes import sessions, artifacts, uploads, chat
+from app.models.response_models import HealthResponse
 
 
 load_dotenv()
@@ -16,10 +16,6 @@ app = FastAPI(title="Multimodal Chatbot", version="0.2.0")
 # TODO: Legacy session_storage - needs to be replaced with Redis implementation
 # session_storage = storage.session_storage
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-
-
-from app.routes import sessions, artifacts, uploads, chat
-from app.models.response_models import HealthResponse
 
 
 load_dotenv()

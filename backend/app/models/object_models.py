@@ -161,3 +161,24 @@ class SessionInfo(BaseModel):
 
     def __repr__(self) -> str:
         return f"<SessionInfo id={self.sessionId} userId={self.userId} title={self.title} numMessages={self.numMessages} numArtifacts={self.numArtifacts}>"
+
+
+class AnalyzeResponse(BaseModel):
+    reply: str
+    code: Optional[str]
+    artifact: Optional[str]
+    artifact_is_mime_type: bool
+    code_execution_failed: Optional[bool] = False
+
+
+class AnalysisResponseModalChatbot(BaseModel):
+    explanation: str = Field(
+        ..., description="2-4 sentence description of your analysis approach"
+    )
+    code: Optional[str] = Field(
+        ..., description="Python code that performs the analysis"
+    )
+    plot: Optional[str] = Field(
+        ...,
+        description="Either 'plot_created' if visualization made, or 'no_plot' if not",
+    )

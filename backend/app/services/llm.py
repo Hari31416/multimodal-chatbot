@@ -2,28 +2,24 @@ from litellm import acompletion
 from typing import List, Any, AsyncGenerator, Dict, Optional, Union
 import os
 from dotenv import load_dotenv
-import pandas as pd
-from PIL import Image
 
 from app.models.object_models import (
     Message,
     Artifact,
     ImageArtifact,
     CSVArtifact,
-    CodeArtifact,
     TextArtifact,
 )
-from app.utils import convert_bytes_to_base64, create_simple_logger
+from app.utils import create_simple_logger
 from app.prompts import Prompts
 from app.services.analyzer import handle_llm_response
-from app.models.models import AnalysisResponseModalChatbot, AnalyzeResponse
+from app.models.object_models import AnalysisResponseModalChatbot
 from app.services.chat.chat_utils import (
     get_messages,
     push_messages,
     create_image_artifact,
-    create_csv_artifact,
 )
-from app.services.storage import redis_cache, ImageHandler, DataFrameHandler
+from app.services.storage import redis_cache, DataFrameHandler
 
 
 load_dotenv()

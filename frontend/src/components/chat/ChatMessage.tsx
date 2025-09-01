@@ -146,7 +146,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     return (
       <>
         <div className="flex justify-end">
-          <div className="max-w-2xl space-y-2">
+          <div className="max-w-2xl w-full md:max-w-2xl">
             <div className="flex flex-col items-end gap-3">
               {imagesToDisplay.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-end">
@@ -245,10 +245,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   return (
     <>
       <div className="flex justify-start">
-        <div className="max-w-3xl w-full">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center flex-shrink-0 mt-1">
-              <span className="text-slate-600 dark:text-slate-300 text-xs font-semibold">
+        <div className="max-w-3xl w-full md:max-w-3xl">
+          <div className="flex gap-1 sm:gap-2 md:gap-3">
+            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center flex-shrink-0 mt-1">
+              <span className="text-slate-600 dark:text-slate-300 text-[10px] md:text-xs font-semibold">
                 AI
               </span>
             </div>

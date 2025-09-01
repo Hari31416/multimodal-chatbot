@@ -26,7 +26,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onNewChat,
 }) => {
   return (
-    <header className="border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 px-4 md:px-6 py-3 flex flex-col gap-2">
+    <header className="border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 px-2 sm:px-4 md:px-6 py-3 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           {onToggleSidebar && (

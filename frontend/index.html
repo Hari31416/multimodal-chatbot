@@ -32,10 +32,20 @@
     <!-- PWA / Theming (light/dark adaptable) -->
     <meta name="theme-color" content="#1e40af" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <script>
+        // Fix for mobile viewport height
+        function setVh() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        setVh();
+        window.addEventListener('resize', setVh);
+        window.addEventListener('orientationchange', setVh);
+    </script>
 </head>
 
-<body class="min-h-screen">
-    <div id="root" class="min-h-screen"></div>
+<body class="min-h-screen overflow-hidden" style="height: calc(var(--vh, 1vh) * 100);">
+    <div id="root" class="min-h-screen overflow-hidden" style="height: calc(var(--vh, 1vh) * 100);"></div>
     <script type="module" src="/src/main.tsx"></script>
 </body>
 

@@ -97,7 +97,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
   };
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -110,7 +110,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
 
       {/* Main Chat Area */}
       <section
-        className={`flex-1 flex flex-col bg-white dark:bg-slate-900 transition-all duration-300 ${
+        className={`flex-1 flex flex-col bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
           sidebarOpen ? "lg:ml-0" : ""
         }`}
       >
@@ -129,7 +129,7 @@ const UnifiedChat: React.FC<UnifiedChatProps> = ({ dark, setDark }) => {
         {/* Messages Container */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-6 py-6 space-y-6 text-[15px] leading-relaxed"
+          className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-4 md:px-6 py-6 space-y-6 text-[15px] leading-relaxed min-h-0"
         >
           {messages.length === 0 && !pending && <EmptyState />}
 

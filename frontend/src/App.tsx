@@ -124,7 +124,10 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col relative">
+    <div
+      className="h-screen flex flex-col relative overflow-hidden"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       <main className="flex-1 overflow-hidden relative">
         <UnifiedChat dark={dark} setDark={setDark} />
         <BackendLoader status={health} />

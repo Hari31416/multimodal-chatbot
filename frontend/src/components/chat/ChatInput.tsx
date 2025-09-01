@@ -73,7 +73,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div
-      className={`border-t border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 px-6 transition-[padding] duration-200 ${
+      className={`border-t border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 px-2 sm:px-4 md:px-6 transition-[padding] duration-200 ${
         idle ? "py-2" : "py-4"
       }`}
     >

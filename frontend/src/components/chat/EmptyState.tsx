@@ -2,7 +2,7 @@ import React from "react";
 
 export const EmptyState: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
+    <div className="flex flex-col items-center justify-center h-full text-center space-y-6 px-2 sm:px-4">
       <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center mb-4">
         <svg
           className="w-8 h-8 text-white"

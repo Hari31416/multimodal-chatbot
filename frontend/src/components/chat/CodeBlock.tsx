@@ -40,9 +40,23 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [wrap, setWrap] = useState(false);
+  const [wrap, setWrap] = useState(() => {
+    // Enable wrapping by default on mobile devices
+    return window.innerWidth < 768;
+  });
   const [expanded, setExpanded] = useState(false);
   const codeRef = useRef<HTMLElement | null>(null);
+
+  // Update wrap state on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setWrap(isMobile);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const raw = extractText(children).replace(/\s+$/g, "");
   const lang = className?.match(/language-([\w+-]+)/)?.[1];
@@ -92,7 +106,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 
   return (
     <div
-      className="relative not-prose group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24]"
+      className="relative not-prose group/code border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-inner transition-colors overflow-hidden bg-[#fafafa] dark:bg-[#1e1e24] w-full max-w-full"
       style={{ alignSelf: "flex-start" }}
     >
       <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between px-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700/50">
@@ -130,17 +144,21 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
         </div>
       </div>
       <div className="relative">
-        <div className="w-full">
+        <div className="w-full overflow-hidden">
           <pre
             className={`${className || ""} mt-8 ${
               wrap
                 ? "overflow-hidden whitespace-pre-wrap break-words"
                 : "overflow-x-auto whitespace-pre"
-            } w-full p-4 pt-2 text-[13px] leading-relaxed font-mono bg-transparent border-none transition-colors`}
+            } w-full max-w-full p-4 pt-2 text-[13px] leading-relaxed font-mono bg-transparent border-none transition-colors ${
+              wrap ? "md:text-[13px]" : ""
+            }`}
           >
             <code
               ref={codeRef}
-              className={`${className} hljs block text-slate-900 dark:text-slate-100`}
+              className={`${className} hljs block text-slate-900 dark:text-slate-100 w-full max-w-full ${
+                wrap ? "break-words" : ""
+              }`}
             >
               {hasPreTokenized ? children : raw}
             </code>

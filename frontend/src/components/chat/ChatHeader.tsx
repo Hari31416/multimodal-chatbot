@@ -95,25 +95,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               </svg>
             </button>
           )}
-          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-sm font-semibold">AI</span>
-          </div>
-          <div className="flex flex-col truncate">
-            <span className="font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-              AI Assistant
-            </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight hidden sm:inline">
-              Ready to help
-            </span>
-          </div>
         </div>
-        <div className="hidden md:flex flex-col items-center text-center px-2">
+        <div className="hidden md:flex flex-col items-center justify-center text-center px-2">
           <h1 className="text-base md:text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            Multimodal Chatbot
+            Advanced Chatbot
           </h1>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Unified text · vision · data
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {datasetAvailable && (

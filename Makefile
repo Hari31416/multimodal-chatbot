@@ -55,7 +55,7 @@ $(VENVDIR)/bin/activate: backend/requirements.txt
 backend/run: backend/install
 	@echo -e "${GREEN}Starting FastAPI (http://localhost:8000)...${NC}"
 	@echo -e "${YELLOW}Logs will be saved to api.log${NC}"
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m uvicorn $(UVICORN_APP) $(UVICORN_OPTS) 2>&1 | tee api.log&
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m uvicorn $(UVICORN_APP) $(UVICORN_OPTS) 2>&1 > api.log  2>&1 &
 
 backend/test: backend/install
 	@echo -e "${GREEN}Running backend tests...${NC}"
@@ -107,27 +107,7 @@ all: backend/install frontend/install
 
 test: backend/test
 
-dev: backend/install frontend/install
-	@echo -e "${GREEN}Starting backend (port $(BACKEND_PORT)) & frontend (port $(FRONTEND_PORT)) concurrently (Ctrl+C to stop)...${NC}"
-	@if lsof -iTCP:$(BACKEND_PORT) -sTCP:LISTEN -Pn >/dev/null 2>&1; then \
-	  echo -e "${YELLOW}Backend port $(BACKEND_PORT) already in use. Showing process(es):${NC}"; \
-	  lsof -iTCP:$(BACKEND_PORT) -sTCP:LISTEN -Pn; \
-	  echo "Use 'make stop' or 'make kill-ports' first."; \
-	  exit 1; \
-	fi
-	@if lsof -iTCP:$(FRONTEND_PORT) -sTCP:LISTEN -Pn >/dev/null 2>&1; then \
-	  echo -e "${YELLOW}Frontend port $(FRONTEND_PORT) already in use. Showing process(es):${NC}"; \
-	  lsof -iTCP:$(FRONTEND_PORT) -sTCP:LISTEN -Pn; \
-	  echo "Use 'make stop' or 'make kill-ports' first."; \
-	  exit 1; \
-	fi
-	# Simple concurrency without extra tooling (uvicorn --reload spawns a watcher + worker)
-	( PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m uvicorn $(UVICORN_APP) $(UVICORN_OPTS) & echo $$! > .backend.pid )
-	( cd $(FRONTEND_DIR) && npm run dev & echo $$! > .frontend.pid )
-	trap 'echo Stopping...; kill $$(cat .backend.pid .frontend.pid) 2>/dev/null || true; rm -f .backend.pid .frontend.pid' INT TERM
-	wait || true
-	@rm -f .backend.pid .frontend.pid
-
+dev: backend/run frontend/dev
 stop:
 	@echo -e "${YELLOW}Stopping dev processes...${NC}"
 	@if [ -f .backend.pid ]; then kill $$(cat .backend.pid) 2>/dev/null || true; rm -f .backend.pid; echo "Backend (PID file) stopped."; fi

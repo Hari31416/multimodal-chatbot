@@ -5,6 +5,7 @@ from PIL import Image
 from typing import Optional, Union
 
 from .redis_cache import redis_cache, RedisCache
+from .cloudflare_r2 import r2_storage, build_artifact_object_key
 from .files_handler import DataFrameHandler, ImageHandler
 from app.utils import create_simple_logger
 from app.models.object_models import (
@@ -50,6 +51,25 @@ def push_csv_artifact_to_redis(
         num_columns=len(pandas_df.columns) if pandas_df is not None else 0,
     )
 
+    # Attempt Cloudflare R2 upload (optional)
+    try:
+        if r2_storage.is_configured:
+            raw_bytes = handler.get_raw_bytes()
+            key = build_artifact_object_key(
+                artifact.artifactId,
+                session_id=None,
+                extension="csv.gz" if compression == "gzip" else "csv",
+            )
+            url = r2_storage.upload_bytes(
+                raw_bytes,
+                key=key,
+                content_type="text/csv" if compression is None else "application/gzip",
+            )
+            if url:
+                artifact.url = url
+    except Exception as e:
+        logger.warning(f"R2 upload failed for CSV artifact {artifact.artifactId}: {e}")
+
     cache.save_artifact(artifact)
     if message_id:
         cache._add_artifact_to_message_index(
@@ -93,6 +113,33 @@ def push_image_artifact_to_redis(
         alt_text=alt_text,
     )
 
+    # Attempt Cloudflare R2 upload (optional)
+    try:
+        if r2_storage.is_configured:
+            pil_bytes = handler.get_raw_bytes()
+            key = build_artifact_object_key(
+                artifact.artifactId,
+                session_id=None,
+                extension=(
+                    handler.image_format.lower() if handler.image_format else "png"
+                ),
+            )
+            url = r2_storage.upload_bytes(
+                pil_bytes,
+                key=key,
+                content_type=(
+                    f"image/{handler.image_format.lower()}"
+                    if handler.image_format
+                    else "image/png"
+                ),
+            )
+            if url:
+                artifact.url = url
+    except Exception as e:
+        logger.warning(
+            f"R2 upload failed for Image artifact {artifact.artifactId}: {e}"
+        )
+
     cache.save_artifact(artifact)
     if message_id:
         cache._add_artifact_to_message_index(
@@ -123,6 +170,17 @@ def push_text_artifact_to_redis(
         description=description or f"Text Artifact for message {message_id}",
         length=len(text),
     )
+
+    try:
+        if r2_storage.is_configured:
+            key = build_artifact_object_key(
+                artifact.artifactId, session_id=None, extension="txt"
+            )
+            url = r2_storage.upload_text(artifact.data, key=key)
+            if url:
+                artifact.url = url
+    except Exception as e:
+        logger.warning(f"R2 upload failed for Text artifact {artifact.artifactId}: {e}")
 
     cache.save_artifact(artifact)
     if message_id:
@@ -158,6 +216,20 @@ def push_code_artifact_to_redis(
         length=len(code),
         language=language,
     )
+
+    try:
+        if r2_storage.is_configured:
+            ext = (language or "txt").lower()
+            if len(ext) > 5:
+                ext = "txt"
+            key = build_artifact_object_key(
+                artifact.artifactId, session_id=None, extension=ext
+            )
+            url = r2_storage.upload_text(code, key=key, content_type="text/plain")
+            if url:
+                artifact.url = url
+    except Exception as e:
+        logger.warning(f"R2 upload failed for Code artifact {artifact.artifactId}: {e}")
 
     cache.save_artifact(artifact)
     if message_id:

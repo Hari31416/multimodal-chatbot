@@ -8,6 +8,10 @@ from PIL import Image
 from app.models.response_models import CSVUploadResponse, ImageUploadResponse
 from app.models.object_models import CSVArtifact, ImageArtifact
 from app.services.storage import redis_cache, DataFrameHandler, ImageHandler
+from app.services.storage.cloudflare_r2 import (
+    r2_storage,
+    build_artifact_object_key,
+)
 from app.utils import create_simple_logger
 
 logger = create_simple_logger(__name__)
@@ -70,7 +74,32 @@ async def upload_csv(
             columns=list(df.columns),
         )
 
-        # Save artifact to Redis
+        if r2_storage.is_configured:
+            try:
+                raw_bytes = file_handler.get_raw_bytes()
+                key = build_artifact_object_key(
+                    csv_artifact.artifactId,
+                    session_id=sessionId,
+                    extension=(
+                        "parquet.gzip" if file_handler.compression == "gzip" else "csv"
+                    ),
+                )
+                url = r2_storage.upload_bytes(
+                    raw_bytes,
+                    key=key,
+                    content_type=(
+                        "text/csv"
+                        if file_handler.compression is None
+                        else "application/gzip"
+                    ),
+                )
+                if url:
+                    csv_artifact.url = url
+            except Exception as e:  # pragma: no cover
+                logger.warning(
+                    f"R2 upload failed for CSV artifact {csv_artifact.artifactId}: {e}"
+                )
+
         redis_cache.save_artifact(csv_artifact)
 
         # Add to session's file artifact index
@@ -150,7 +179,25 @@ async def upload_image(
             thumbnail_data=thumb_data,
         )
 
-        # Save artifact to Redis
+        if r2_storage.is_configured:
+            try:
+                key = build_artifact_object_key(
+                    image_artifact.artifactId,
+                    session_id=sessionId,
+                    extension=(image.format or "png").lower(),
+                )
+                url = r2_storage.upload_bytes(
+                    buffered.getvalue(),
+                    key=key,
+                    content_type=f"image/{(image.format or 'png').lower()}",
+                )
+                if url:
+                    image_artifact.url = url
+            except Exception as e:  # pragma: no cover
+                logger.warning(
+                    f"R2 upload failed for Image artifact {image_artifact.artifactId}: {e}"
+                )
+
         redis_cache.save_artifact(image_artifact)
 
         # Add to session's file artifact index

@@ -76,7 +76,7 @@ def convert_message_for_llm(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/png;base64,{artifact.data}",
+                        "url": artifact.url,
                     },
                 }
             )

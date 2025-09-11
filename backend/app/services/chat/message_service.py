@@ -338,7 +338,7 @@ class MessageService:
             artifacts = artifact_service.get_artifacts_for_message(
                 message_id=message_id, session_id=session_id, user_id=user_id
             )
-            message.artifacts = []
+            message.artifacts = artifacts
 
             return message
 
